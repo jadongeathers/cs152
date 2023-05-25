@@ -31,7 +31,6 @@ class Report:
         prompts to offer at each of those states. You're welcome to change anything you want; this skeleton is just here to
         get you started and give you a model for working with Discord. 
         '''
-
         if message.content == self.CANCEL_KEYWORD:
             self.state = State.REPORT_COMPLETE
             return ["Report cancelled."]
@@ -62,12 +61,11 @@ class Report:
 
             # Here we've found the message - it's up to you to decide what to do next!
             self.state = State.MESSAGE_IDENTIFIED
-            return ["I found this message:", "```" + message.author.name + ": " + message.content + "```", \
-                    "This is all I know how to do right now - it's up to you to build out the rest of my reporting flow!"]
         
         if self.state == State.MESSAGE_IDENTIFIED:
             self.state = State.USER_FIRST_PROMPT
-            return ["Why are you reporting this message (please respond with the corresponding number)? \n(1) Fraud\n(2) Verbal Abuse\n(3) Harassment/Intimidation of Violence\n(4) Sensitive/Disturbing Content\n(5) Other\n"]
+            return ["I found this message:", "```" + message.author.name + ": " + message.content + "```",
+                    "Why are you reporting this message (please respond with the corresponding number)? \n(1) Fraud\n(2) Verbal Abuse\n(3) Harassment/Intimidation of Violence\n(4) Sensitive/Disturbing Content\n(5) Other\n"]
         
         if self.state == State.USER_FIRST_PROMPT:
             if message == '1':

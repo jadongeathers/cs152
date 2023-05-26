@@ -138,8 +138,7 @@ class Report:
             self.report_complete()
             return ['Done. Report Closed.']
 
-        else:
-            return ['Invalid action. Please select only valid actions.']
+        return []
 
     def report_complete(self):
         return self.state == State.REPORT_COMPLETE

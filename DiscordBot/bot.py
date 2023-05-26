@@ -6,7 +6,7 @@ import json
 import logging
 import re
 import requests
-from report import Report
+from report import Report, Review
 import pdb
 
 # Set up logging to the console
@@ -37,6 +37,8 @@ class ModBot(discord.Client):
         self.group_num = None
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
+        self.unreviewed = {} # Map from user IDs to unreview report
+        self.reviews = {} # Map from user IDs to the state of their review
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')
@@ -91,6 +93,7 @@ class ModBot(discord.Client):
         # If we don't currently have an active report for this user, add one
         if author_id not in self.reports:
             self.reports[author_id] = Report(self)
+            self.unreviewed[author_id] = self.reports[author_id]
 
         # Let the report class handle this message; forward all the messages it returns to uss
         responses = await self.reports[author_id].handle_message(message)
@@ -102,17 +105,75 @@ class ModBot(discord.Client):
             self.reports.pop(author_id)
 
     async def handle_channel_message(self, message):
+        # ORIGINAL:
         # Only handle messages sent in the "group-#" channel
-        if not message.channel.name == f'group-{self.group_num}':
-            return
+        # if not message.channel.name == f'group-{self.group_num}':
+        #     return
+
+        ##### START ADDED #####
 
         # Forward the message to the mod channel
         mod_channel = self.mod_channels[message.guild.id]
-        await mod_channel.send(f'Forwarded message:\n{message.author.name}: "{message.content}"')
-        scores = self.eval_text(message.content)
-        await mod_channel.send(self.code_format(scores))
+        if message.channel.name == f'group-{self.group_num}':
+            await mod_channel.send(f'Forwarded message:\n{message.author.name}: "{message.content}"')
 
-    
+        if message.channel.name == f'group-{self.group_num}-mod':
+
+            # Handle a help message
+            if message.content == Review.HELP_KEYWORD:
+                reply = "Use the `review` command to begin the review process.\n"
+                reply += "Use the `cancel` command to cancel the review process.\n"
+                await message.channel.send(reply)
+                return
+
+            author_id = message.author.id
+            responses = []
+
+            # If there are no reports, return
+            if not self.unreviewed:
+                await message.channel.send('No available unreviewed reports or reports in progress.')
+                return
+
+            # Select a report (no priority yet)
+            user_report_id = list(self.unreviewed.keys())[0]
+            report = self.unreviewed[user_report_id]
+            offending_message = report.offending_message
+
+            # Only respond to messages if they're part of a review flow
+            if author_id not in self.reviews and not message.content.startswith(Review.START_KEYWORD):
+                return
+
+            # If we don't currently have an active review for this mod, add one
+            if author_id not in self.reviews:
+                await message.channel.send('Below is the reported content:')
+                await message.channel.send("```" + offending_message.author.name + ": " + offending_message.content + "```")
+                self.reviews[author_id] = Review(self)
+
+            # Let the review class handle this message; forward all the messages it returns to us
+            responses = await self.reviews[author_id].handle_message(message)
+            for r in responses:
+                await message.channel.send(r)
+
+            # If the review is complete or cancelled, remove it from the appropriate maps
+            if self.reviews[author_id].review_complete():
+                await message.channel.send('Done. Review complete.')
+                self.reviews.pop(author_id)
+                self.unreviewed.pop(user_report_id)
+            if self.reviews and self.reviews[author_id].review_cancelled():
+                self.reviews.pop(author_id)
+
+        if message.channel.name == f'group-{self.group_num}':
+            scores = self.eval_text(message.content)
+            await mod_channel.send(self.code_format(scores))
+
+        return
+
+        ##### END ADDED #####
+
+        # ORIGINAL:
+        # scores = self.eval_text(message.content)
+        # await mod_channel.send(self.code_format(scores))
+
     def eval_text(self, message):
         ''''
         TODO: Once you know how you want to evaluate messages in your channel, 

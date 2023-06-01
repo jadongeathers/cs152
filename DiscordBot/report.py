@@ -2,7 +2,6 @@ from enum import Enum, auto
 import discord
 import re
 
-# hey its jamie
 
 class State(Enum):
     REPORT_START = auto()
@@ -16,6 +15,7 @@ class State(Enum):
     USER_OTHER = auto()
     USER_BLOCK = auto()
     REPORT_COMPLETE = auto()
+
 
 class Report:
     START_KEYWORD = "report"

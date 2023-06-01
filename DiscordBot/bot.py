@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # bot.py
 import discord
 from discord.ext import commands
@@ -8,6 +9,7 @@ import re
 import requests
 from report import Report, Review
 import pdb
+from data_manager import DataManager
 
 # Set up logging to the console
 logger = logging.getLogger('discord')
@@ -39,6 +41,7 @@ class ModBot(discord.Client):
         self.reports = {} # Map from user IDs to the state of their report
         self.unreviewed = {} # Map from user IDs to unreview report
         self.reviews = {} # Map from user IDs to the state of their review
+        self.data_manager = DataManager()
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')

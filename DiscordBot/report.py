@@ -1,6 +1,7 @@
 from enum import Enum, auto
 import discord
 import re
+from data_manager import DataManager
 
 
 class State(Enum):
@@ -27,6 +28,7 @@ class Report:
         self.client = client
         self.message = None
         self.offending_message = None
+        self.cancelled = False
     
     async def handle_message(self, message):
         '''
@@ -36,6 +38,7 @@ class Report:
         '''
         if message.content == self.CANCEL_KEYWORD:
             self.state = State.REPORT_COMPLETE
+            self.cancelled = True
             return ["Report cancelled."]
         
         if self.state == State.REPORT_START:
@@ -139,6 +142,7 @@ class Report:
         if self.state == State.USER_BLOCK and message.content in ('yes', 'no'):
             self.state = State.REPORT_COMPLETE
             self.report_complete()
+            # client.add_user_report(message.author.id)
             return ['Done. Report Closed.']
 
         else:

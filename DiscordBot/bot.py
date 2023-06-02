@@ -81,7 +81,7 @@ class ModBot(discord.Client):
     async def handle_dm(self, message):
         # Handle a help message
         if message.content == Report.HELP_KEYWORD:
-            reply =  "Use the `report` command to begin the reporting process.\n"
+            reply =  "Use the `report` command to begin the ing process.\n"
             reply += "Use the `cancel` command to cancel the report process.\n"
             await message.channel.send(reply)
             return
@@ -105,6 +105,8 @@ class ModBot(discord.Client):
 
         # If the report is complete or cancelled, remove it from our map
         if self.reports[author_id].report_complete():
+            if not self.reports[author_id].cancelled:
+                self.data_manager.add_user_report(author_id)
             self.reports.pop(author_id)
 
     async def handle_channel_message(self, message):

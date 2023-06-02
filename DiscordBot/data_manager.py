@@ -1,11 +1,11 @@
 class ReportInfo:
     def __init__(self):
-        self.total_reports = 0
+        self.total_reports_filed = 0
+        self.total_reports_confirmed = 0
         self.accurate_reports = 0
-        self.num_reported = 0
 
     def get_percentage(self):
-        return self.accurate_reports / self.total_reports
+        return self.accurate_reports / self.total_reports_confirmed
 
 # new user is created
 # user_report_info[user_id] = ReportInfo()
@@ -17,14 +17,17 @@ class DataManager:
         self.trust_scores = dict()
         self.user_report_info = dict()
 
-    def get_trust_score(self, message):
-        return
+    def get_trust_score(self, user):
+        self.user_report_info[user].get_percentage()
 
-    def add_true_report(self, message):
-        return
+    def add_user_report(self, user):
+        if user not in self.user_report_info:
+            self.user_report_info[user] = ReportInfo()
+        self.user_report_info[user].total_reports_filed += 1
 
-    def add_false_report(self, message):
-        return
+    def add_true_report(self, user):
+        self.user_report_info[user].accurate_reports += 1
+
 
 
 

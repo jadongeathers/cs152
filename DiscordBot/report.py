@@ -29,6 +29,7 @@ class Report:
         self.message = None
         self.offending_message = None
         self.cancelled = False
+        self.reproter_id = None
     
     async def handle_message(self, message):
         '''
@@ -77,6 +78,8 @@ class Report:
                      "\n(4) Sensitive/Disturbing Content\n(5) Other\n"]
 
         if self.state == State.USER_FIRST_PROMPT:
+            # saves user making the report
+            self.reporter_id = message.author.id
             if message.content == '1':
                 self.state = State.USER_FRAUD
                 return ["Select the type of harm. Please respond with the corresponding number. "
@@ -177,6 +180,7 @@ class ReviewState(Enum):
     REVIEW_TIER_4 = auto()
     REVIEW_TIER_4_CSAM = auto()
     REVIEW_DISCRETIONARY = auto()
+    REVIEW_NO_ACTION = auto()
 
 class Review:
     START_KEYWORD = "review"
@@ -187,6 +191,7 @@ class Review:
         self.state = ReviewState.REVIEW_START
         self.client = client
         self.message = None
+        self.noaction = False
     
     async def handle_message(self, message):
         '''
@@ -356,6 +361,7 @@ class Review:
 
         if self.state == ReviewState.REVIEW_TIER_0:
             self.state = ReviewState.REVIEW_COMPLETE
+            self.noaction = True
             return ['Notified reporter that the behavior is not abusive. Provided them with an option to dispute.']
 
         if self.state == ReviewState.REVIEW_TIER_1:

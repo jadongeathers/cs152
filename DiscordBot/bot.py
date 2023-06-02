@@ -143,6 +143,7 @@ class ModBot(discord.Client):
             user_report_id = list(self.unreviewed.keys())[0]
             report = self.unreviewed[user_report_id]
             offending_message = report.offending_message
+            reporter = report.reporter_id
 
             # Only respond to messages if they're part of a review flow
             if author_id not in self.reviews and not message.content.startswith(Review.START_KEYWORD):
@@ -152,6 +153,8 @@ class ModBot(discord.Client):
             if author_id not in self.reviews:
                 await message.channel.send('Below is the reported content:')
                 await message.channel.send("```" + offending_message.author.name + ": " + offending_message.content + "```")
+                await message.channel.send('Reporting User ' + str(reporter) + ' has made ' + str(self.data_manager.get_reports_confirmed(reporter))
+                                           + ' previous reports with ' + str(self.data_manager.get_trust_score(reporter)) + '% accuracy ')
                 self.reviews[author_id] = Review(self)
 
             # Let the review class handle this message; forward all the messages it returns to us
@@ -162,6 +165,12 @@ class ModBot(discord.Client):
             # If the review is complete or cancelled, remove it from the appropriate maps
             if self.reviews[author_id].review_complete():
                 await message.channel.send('Done. Review complete.')
+                # if report is accurate, incrament accurate reports count by one
+                if not self.reviews[author_id].noaction:
+                    self.data_manager.add_true_report(user_report_id)
+                # if report isnt cancelled, increment confirmed reports by one
+                if not self.reviews[author_id].review_cancelled():
+                    self.data_manager.add_confirmed_report(user_report_id)
                 self.reviews.pop(author_id)
                 self.unreviewed.pop(user_report_id)
             if self.reviews and self.reviews[author_id].review_cancelled():

@@ -5,43 +5,34 @@ class ReportInfo:
         self.accurate_reports = 0
 
     def get_percentage(self):
-        return self.accurate_reports / self.total_reports_confirmed
+        if self.total_reports_confirmed == 0:
+            return None
+        return 100 * self.accurate_reports / self.total_reports_confirmed
 
-# new user is created
-# user_report_info[user_id] = ReportInfo()
 
-# to access it in the future
-# user_report_info[user_id].get_percentage()...
 class DataManager:
     def __init__(self):
-        self.trust_scores = dict()
+        # creates dictionary wheere userids mad to ReportInfo structs
         self.user_report_info = dict()
 
     def get_trust_score(self, user):
-        self.user_report_info[user].get_percentage()
+        return self.user_report_info[user].get_percentage()
 
+    # when a user makes a report, adds it to user statistics
     def add_user_report(self, user):
         if user not in self.user_report_info:
             self.user_report_info[user] = ReportInfo()
         self.user_report_info[user].total_reports_filed += 1
 
+    # returns number of reports a user has made than have been reviewd by mod team
+    def get_reports_confirmed(self, user):
+        return self.user_report_info[user].total_reports_confirmed
+
+    # when mod team has revirew a user's report, statistic is kept for that user
+    def add_confirmed_report(self, user):
+        self.user_report_info[user].total_reports_confirmed += 1
+
+    # increases count of accurate reports
     def add_true_report(self, user):
         self.user_report_info[user].accurate_reports += 1
-
-
-
-
-    """Step 1"""
-    # make a command to allow the moderator to view a trust score
-
-    """Step 2"""
-    # take in a username or user id, etc, and
-    # return the trust score for that user
-    #   -- find out how to get the user in question (user.name in the Member class)
-    # message -> channel obj -> list of members -> member obj --> name
-
-    """Step 3"""
-    # increment total report count and accurate report count
-    # with the correct user object, return their trust score
-    #   -- user_report_info[user_id].get_percentage()
 

@@ -6,8 +6,19 @@ import json
 import logging
 import re
 import requests
+from googleapiclient import discovery
 from report import Report, Review
 import pdb
+
+API_KEY = 'AIzaSyAedrHBbL8bb8MyivTeJOKzdlz7qf9_uhI'
+
+client = discovery.build(
+  "commentanalyzer",
+  "v1alpha1",
+  developerKey=API_KEY,
+  discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
+  static_discovery=False,
+)
 
 # Set up logging to the console
 logger = logging.getLogger('discord')
@@ -163,8 +174,8 @@ class ModBot(discord.Client):
                 self.reviews.pop(author_id)
 
         if message.channel.name == f'group-{self.group_num}':
-            scores = self.eval_text(message.content)
-            await mod_channel.send(self.code_format(scores))
+            score = self.eval_text(message)
+            await mod_channel.send(self.code_format(score))
 
         return
 
@@ -175,11 +186,17 @@ class ModBot(discord.Client):
         # await mod_channel.send(self.code_format(scores))
 
     def eval_text(self, message):
-        ''''
-        TODO: Once you know how you want to evaluate messages in your channel, 
-        insert your code here! This will primarily be used in Milestone 3. 
-        '''
-        return message
+        analyze_request = {
+            'comment': {'text': message.content},
+            'requestedAttributes': {
+                'IDENTITY_ATTACK': {},
+                'INSULT': {},
+                'THREAT': {}
+            }
+        }
+        response = client.comments().analyze(body=analyze_request).execute()
+        probs = {flag: response['attributeScores'][flag]['summaryScore']['value'] for flag in response['attributeScores']}
+        return probs
 
     
     def code_format(self, text):
@@ -188,7 +205,7 @@ class ModBot(discord.Client):
         evaluated, insert your code here for formatting the string to be 
         shown in the mod channel. 
         '''
-        return "Evaluated: '" + text+ "'"
+        return "Evaluated: '" + str(text)+ "'"
 
 
 client = ModBot()

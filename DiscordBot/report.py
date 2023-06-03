@@ -1,6 +1,8 @@
 from enum import Enum, auto
 import discord
 import re
+from data_manager import DataManager
+
 
 class State(Enum):
     REPORT_START = auto()
@@ -15,6 +17,7 @@ class State(Enum):
     USER_BLOCK = auto()
     REPORT_COMPLETE = auto()
 
+
 class Report:
     START_KEYWORD = "report"
     CANCEL_KEYWORD = "cancel"
@@ -25,6 +28,8 @@ class Report:
         self.client = client
         self.message = None
         self.offending_message = None
+        self.cancelled = False
+        self.reproter_id = None
     
     async def handle_message(self, message):
         '''
@@ -34,6 +39,7 @@ class Report:
         '''
         if message.content == self.CANCEL_KEYWORD:
             self.state = State.REPORT_COMPLETE
+            self.cancelled = True
             return ["Report cancelled."]
         
         if self.state == State.REPORT_START:
@@ -72,6 +78,8 @@ class Report:
                      "\n(4) Sensitive/Disturbing Content\n(5) Other\n"]
 
         if self.state == State.USER_FIRST_PROMPT:
+            # saves user making the report
+            self.reporter_id = message.author.id
             if message.content == '1':
                 self.state = State.USER_FRAUD
                 return ["Select the type of harm. Please respond with the corresponding number. "
@@ -137,6 +145,7 @@ class Report:
         if self.state == State.USER_BLOCK and message.content in ('yes', 'no'):
             self.state = State.REPORT_COMPLETE
             self.report_complete()
+            # client.add_user_report(message.author.id)
             return ['Done. Report Closed.']
 
         else:
@@ -171,6 +180,7 @@ class ReviewState(Enum):
     REVIEW_TIER_4 = auto()
     REVIEW_TIER_4_CSAM = auto()
     REVIEW_DISCRETIONARY = auto()
+    REVIEW_NO_ACTION = auto()
 
 class Review:
     START_KEYWORD = "review"
@@ -181,6 +191,7 @@ class Review:
         self.state = ReviewState.REVIEW_START
         self.client = client
         self.message = None
+        self.noaction = False
     
     async def handle_message(self, message):
         '''
@@ -350,6 +361,7 @@ class Review:
 
         if self.state == ReviewState.REVIEW_TIER_0:
             self.state = ReviewState.REVIEW_COMPLETE
+            self.noaction = True
             return ['Notified reporter that the behavior is not abusive. Provided them with an option to dispute.']
 
         if self.state == ReviewState.REVIEW_TIER_1:

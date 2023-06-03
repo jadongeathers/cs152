@@ -10,16 +10,6 @@ from googleapiclient import discovery
 from report import Report, Review
 import pdb
 
-API_KEY = None
-
-client = discovery.build(
-  "commentanalyzer",
-  "v1alpha1",
-  developerKey=API_KEY,
-  discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
-  static_discovery=False,
-)
-
 # Set up logging to the console
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
@@ -35,6 +25,17 @@ with open(token_path) as f:
     # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
     tokens = json.load(f)
     discord_token = tokens['discord']
+    google_token = tokens['google']
+
+API_KEY = google_token
+
+client = discovery.build(
+  "commentanalyzer",
+  "v1alpha1",
+  developerKey=API_KEY,
+  discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
+  static_discovery=False,
+)
 
 
 class ModBot(discord.Client):

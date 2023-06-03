@@ -31,7 +31,7 @@ with open(token_path) as f:
 
 API_KEY = google_token
 
-client = discovery.build(
+google = discovery.build(
   "commentanalyzer",
   "v1alpha1",
   developerKey=API_KEY,
@@ -209,7 +209,7 @@ class ModBot(discord.Client):
                 'THREAT': {}
             }
         }
-        response = client.comments().analyze(body=analyze_request).execute()
+        response = google.comments().analyze(body=analyze_request).execute()
         probs = {flag: response['attributeScores'][flag]['summaryScore']['value'] for flag in response['attributeScores']}
         return probs
 

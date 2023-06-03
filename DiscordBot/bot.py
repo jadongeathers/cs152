@@ -10,7 +10,7 @@ from googleapiclient import discovery
 from report import Report, Review
 import pdb
 
-API_KEY = 'AIzaSyAedrHBbL8bb8MyivTeJOKzdlz7qf9_uhI'
+API_KEY = None
 
 client = discovery.build(
   "commentanalyzer",

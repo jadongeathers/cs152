@@ -1,6 +1,7 @@
 from enum import Enum, auto
 import discord
 import re
+
 from data_manager import DataManager
 
 
@@ -29,7 +30,9 @@ class Report:
         self.message = None
         self.offending_message = None
         self.cancelled = False
-        self.reproter_id = None
+        self.reporter_id = None
+        # Which of the five categories in our review flow does the report fall under
+        self.categories = [False, False, False, False, False]
     
     async def handle_message(self, message):
         '''
@@ -82,10 +85,12 @@ class Report:
             self.reporter_id = message.author.id
             if message.content == '1':
                 self.state = State.USER_FRAUD
+                self.categories[0] = True
                 return ["Select the type of harm. Please respond with the corresponding number. "
                         "\n(1) Impersonation\n(2) Scam\n(3) Solicitation\n"]
             if message.content == '2':
                 self.state = State.USER_VERBAL_ABUSE
+                self.categories[1] = True
                 reply = "Select the type of harm. Please respond with the corresponding number. \n"
                 reply += 'Violent language concerning...\n'
                 reply += "(1) Celebration of violent acts\n"
@@ -101,16 +106,21 @@ class Report:
                 return [reply] 
             if message.content == '3':
                 self.state = State.USER_HARASSMENT
+                self.categories[2] = True
                 return ["Select the type of harm. Please respond with the corresponding number. "
                         "\n(1) Sexual Harassment\n(2) Threatening to post or posting private info"
                         "\n(3) Stalking or threats to injure\n"]
             if message.content == '4':
                 self.state = State.USER_SENSITIVE_CONTENT
+                self.categories[3] = True
                 return ["Select the type of harm. Please respond with the corresponding number. "
                         "\n(1) Child Exploitation\n(2) Assault\n(3) Beastiality\n(4) Self Harm\n"]
             if message.content == '5':
                 self.state = State.USER_OTHER
-                return ["Why is this message harmful?"] 
+                self.categories[4] = True
+                return ["Why is this message harmful?"]
+
+            return ['Please select a valid option.']
         
         if self.state == State.USER_FRAUD and message.content in ('1', '2', '3'):
             reply = 'Thank you for your report. Our 24/7 moderation team will review it shortly.\n'
@@ -181,17 +191,22 @@ class ReviewState(Enum):
     REVIEW_TIER_4_CSAM = auto()
     REVIEW_DISCRETIONARY = auto()
     REVIEW_NO_ACTION = auto()
+    REVIEW_CANNOT_REVIEW = auto()
+    REVIEW_BOT = auto()
 
 class Review:
     START_KEYWORD = "review"
     CANCEL_KEYWORD = "cancel"
     HELP_KEYWORD = "help"
 
-    def __init__(self, client):
+    def __init__(self, client, unreviewed=None, data_manager=None):
         self.state = ReviewState.REVIEW_START
         self.client = client
         self.message = None
         self.noaction = False
+        self.user_report_id = None
+        self.unreviewed = unreviewed
+        self.data_manager = data_manager
     
     async def handle_message(self, message):
         '''
@@ -205,13 +220,191 @@ class Review:
         
         if self.state == ReviewState.REVIEW_START:
             reply = "Thank you for starting the review process. \n"
-            reply += "Under which category should this message fall? Please respond with the corresponding number."
+            reply += "Which category would you like to review? \n"
             reply += "\n(1) Fraud\n(2) Verbal Abuse\n(3) Harassment/Threats of Violence"
-            reply += "\n(4) Sensitive/Disturbing Content\n(5) Other\n"
+            reply += "\n(4) Sensitive/Disturbing Content\n(5) Other\n(6) Automatic Reports"
             self.state = ReviewState.REVIEW_FIRST_MESSAGE
             return [reply]
         
-        if self.state == ReviewState.REVIEW_FIRST_MESSAGE and message.content in ('1', '2', '3', '4', '5'):
+        if self.state == ReviewState.REVIEW_FIRST_MESSAGE and message.content in ('1', '2', '3', '4', '5', '6'):
+            if message.content == '1':
+                # Make queue and get report
+                reports = {}
+                for author in self.unreviewed:
+                    for report in self.unreviewed[author]:
+                        if report.categories[0]:
+                            if author not in reports:
+                                reports[author] = []
+                            reports[author].append(report)
+                if not reports:
+                    self.state = ReviewState.REVIEW_CANNOT_REVIEW
+                    return ['No available unreviewed reports or reports in progress.']
+
+                self.user_report_id = list(reports.keys())[0]
+                report = self.unreviewed[self.user_report_id][0]
+                offending_message = report.offending_message
+                reporter = report.reporter_id
+                await message.channel.send('Below is the reported content:')
+                await message.channel.send("```" + offending_message.author.name + ": " + offending_message.content + "```")
+                await message.channel.send('Reporting User ' + str(reporter) + ' has made ' + str(self.data_manager.get_reports_confirmed(reporter))
+                                           + ' previous reports with ' + str(self.data_manager.get_trust_score(reporter)) + '% accuracy ')
+
+                reply = 'What is the type of fraud?\n'
+                reply += '(1) Impersonation\n'
+                reply += '(2) Scam\n'
+                reply += '(3) Solicitation\n'
+                self.state = ReviewState.REVIEW_FRAUD
+                return [reply]
+
+            if message.content == '2':
+                # Make queue and get report
+                reports = {}
+                for author in self.unreviewed:
+                    for report in self.unreviewed[author]:
+                        if report.categories[1]:
+                            if author not in reports:
+                                reports[author] = []
+                            reports[author].append(report)
+                if not reports:
+                    self.state = ReviewState.REVIEW_CANNOT_REVIEW
+                    return ['No available unreviewed reports or reports in progress.']
+
+                self.user_report_id = list(reports.keys())[0]
+                report = self.unreviewed[self.user_report_id][0]
+                offending_message = report.offending_message
+                reporter = report.reporter_id
+                await message.channel.send('Below is the reported content:')
+                await message.channel.send(
+                    "```" + offending_message.author.name + ": " + offending_message.content + "```")
+                await message.channel.send('Reporting User ' + str(reporter) + ' has made ' + str(
+                    self.data_manager.get_reports_confirmed(reporter))
+                                           + ' previous reports with ' + str(
+                    self.data_manager.get_trust_score(reporter)) + '% accuracy ')
+
+                reply = 'What is the type of verbal abuse? Please select the corresponding number.\n'
+                reply += '(1) Celebration of violent acts\n'
+                reply += '(2) Denial of a violent event\n'
+                reply += '(3) Dehumanization\n'
+                reply += '(4) Inciting or encouraging violence\n'
+                reply += '(5) Hate speech'
+                self.state = ReviewState.REVIEW_VERBAL_ABUSE
+                return [reply]
+
+            if message.content == '3':
+                # Make queue and get report
+                reports = {}
+                for author in self.unreviewed:
+                    for report in self.unreviewed[author]:
+                        if report.categories[2]:
+                            if author not in reports:
+                                reports[author] = []
+                            reports[author].append(report)
+                if not reports:
+                    print('not reports')
+                    self.state = ReviewState.REVIEW_CANNOT_REVIEW
+                    return ['No available unreviewed reports or reports in progress.']
+
+                self.user_report_id = list(reports.keys())[0]
+                report = self.unreviewed[self.user_report_id][0]
+                offending_message = report.offending_message
+                reporter = report.reporter_id
+                await message.channel.send('Below is the reported content:')
+                await message.channel.send(
+                    "```" + offending_message.author.name + ": " + offending_message.content + "```")
+                await message.channel.send('Reporting User ' + str(reporter) + ' has made ' + str(
+                    self.data_manager.get_reports_confirmed(reporter))
+                                           + ' previous reports with ' + str(
+                    self.data_manager.get_trust_score(reporter)) + '% accuracy ')
+
+                reply = 'What is the type of harassment or intimidation? Please select the corresponding number.\n'
+                reply += '(1) Threatening to post or posting private information\n'
+                reply += '(2) Sexual harassment\n'
+                reply += '(3) Stalking or threats to injure'
+                self.state = ReviewState.REVIEW_HARASSMENT
+                return [reply]
+
+            if message.content == '4':
+                # Make queue and get report
+                reports = {}
+                for author in self.unreviewed:
+                    for report in self.unreviewed[author]:
+                        if report.categories[3]:
+                            if author not in reports:
+                                reports[author] = []
+                            reports[author].append(report)
+                if not reports:
+                    self.state = ReviewState.REVIEW_CANNOT_REVIEW
+                    return ['No available unreviewed reports or reports in progress.']
+
+                self.user_report_id = list(reports.keys())[0]
+                report = self.unreviewed[self.user_report_id][0]
+                offending_message = report.offending_message
+                reporter = report.reporter_id
+                await message.channel.send('Below is the reported content:')
+                await message.channel.send("```" + offending_message.author.name + ": " + offending_message.content + "```")
+                await message.channel.send('Reporting User ' + str(reporter) + ' has made ' + str(self.data_manager.get_reports_confirmed(reporter))
+                                           + ' previous reports with ' + str(self.data_manager.get_trust_score(reporter)) + '% accuracy ')
+
+                reply = 'What is the type of sensitive or disturbing content? Please select the corresponding number.\n'
+                reply += '(1) Assault\n'
+                reply += '(2) Self harm\n'
+                reply += '(3) Beastiality\n'
+                reply += '(4) Child exploitation'
+                self.state = ReviewState.REVIEW_SENSITIVE
+                return reply
+
+            if message.content == '5':
+                # Make queue and get report
+                reports = {}
+                for author in self.unreviewed:
+                    for report in self.unreviewed[author]:
+                        if report.categories[4]:
+                            if author not in reports:
+                                reports[author] = []
+                            reports[author].append(report)
+                if not reports:
+                    self.state = ReviewState.REVIEW_CANNOT_REVIEW
+                    return ['No available unreviewed reports or reports in progress.']
+
+                self.user_report_id = list(reports.keys())[0]
+                report = self.unreviewed[self.user_report_id][0]
+                offending_message = report.offending_message
+                reporter = report.reporter_id
+                await message.channel.send('Below is the reported content:')
+                await message.channel.send("```" + offending_message.author.name + ": " + offending_message.content + "```")
+                await message.channel.send('Reporting User ' + str(reporter) + ' has made ' + str(self.data_manager.get_reports_confirmed(reporter))
+                                           + ' previous reports with ' + str(self.data_manager.get_trust_score(reporter)) + '% accuracy ')
+                self.state = ReviewState.REVIEW_OTHER
+                return ['Does the content fit into any other violative category (yes/no)?']
+
+            if message.content == '6':
+                # Make queue and get report
+                reports = {}
+                if 'BOT' in self.unreviewed:
+                    reports['BOT'] = self.unreviewed['BOT']
+                if not reports:
+                    self.state = ReviewState.REVIEW_CANNOT_REVIEW
+                    return ['No available unreviewed reports or reports in progress.']
+
+                self.user_report_id = list(reports.keys())[0]
+                report = self.unreviewed[self.user_report_id][0]
+                offending_message = report.offending_message
+                reporter = report.reporter_id
+                await message.channel.send('Below is the reported content:')
+                await message.channel.send(
+                    "```" + offending_message.author.name + ": " + offending_message.content + "```")
+                await message.channel.send('Reporting User ' + str(reporter) + ' has made ' + str(
+                    self.data_manager.get_reports_confirmed(reporter))
+                                           + ' previous reports with ' + str(
+                    self.data_manager.get_trust_score(reporter)) + '% accuracy ')
+                self.state = ReviewState.REVIEW_BOT
+                return ["What is the offense? Please respond with the corresponding number. "
+                        "\n(1) Fraud\n(2) Verbal Abuse\n(3) Harassment/Threats of Violence"
+                        "\n(4) Sensitive/Disturbing Content\n(5) Other\n"]
+
+            return ['Please select a valid option.']
+
+        if self.state == ReviewState.REVIEW_BOT and message.content in ('1', '2', '3', '4', '5'):
             if message.content == '1':
                 reply = 'What is the type of fraud?\n'
                 reply += '(1) Impersonation\n'
@@ -251,6 +444,8 @@ class Review:
                 self.state = ReviewState.REVIEW_OTHER
                 return ['Does the content fit into any other violative category (yes/no)?']
 
+            return ['Please select a valid option.']
+
         if self.state == ReviewState.REVIEW_FRAUD:
             self.state = ReviewState.REVIEW_TIER_1
 
@@ -261,28 +456,34 @@ class Review:
             elif message.content == '4':
                 self.state = ReviewState.REVIEW_DISCRIMINATE_HIGH
                 return ['Does it discriminate based on inherited attributes and/or feature hate speech (yes/no)?']
-            else:
+            elif message.content == '5':
                 self.state = ReviewState.REVIEW_INCITE_VIOLENCE
                 return ['Does it encourage, incite, or threaten violence (yes/no)?']
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_HARASSMENT:
             if message.content == '1':
                 self.state = ReviewState.REVIEW_DISCRIMINATE_HARASSMENT
                 return ['Does it discriminate based on inherited attributes and/or feature hate speech (yes/no)?']
-            else:
+            elif message.content in ('2', '3'):
                 self.state = ReviewState.REVIEW_TIER_3
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_SENSITIVE:
             if message.content in ('1', '2'):
                 self.state = ReviewState.REVIEW_DISCRIMINATE_SENSITIVE
-            else:
+            elif message.content in ('3', '4'):
                 self.state = ReviewState.REVIEW_TIER_4
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_OTHER and message.content in ('yes', 'no'):
             if message.content == 'no':
                 self.state = ReviewState.REVIEW_ABUSIVE
                 return ['Is the content abusive?']
-            else:
+            elif message.content == 'yes':
                 reply = 'How would this abuse be categorized? Please select the corresponding number.\n'
                 reply += '(0) Tier 0: Not abusive\n'
                 reply += '(1) Tier 1: Low risk abuse\n'
@@ -292,58 +493,76 @@ class Review:
                 reply += '(5) Tier 4: CSAM'
                 self.state = ReviewState.REVIEW_DISCRETIONARY
                 return [reply]
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_DEFAMATION and message.content in ('yes', 'no'):
             if message.content == 'no':
                 self.state = ReviewState.REVIEW_DEROGATORY
                 return ['Does it contain derogatory slurs and other intentionally abuse '
                         'language, including misgendering (yes/no)?']
-            else:
+            elif message.content == 'yes':
                 self.state = ReviewState.REVIEW_TIER_3
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_DEROGATORY and message.content in ('yes', 'no'):
             if message.content == 'no':
                 self.state = ReviewState.REVIEW_TIER_1
-            else:
+            elif message.content == 'yes':
                 self.state = ReviewState.REVIEW_TIER_2
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_INCITE_VIOLENCE and message.content in ('yes', 'no'):
             if message.content == 'no':
                 self.state = ReviewState.REVIEW_DEFAMATION
                 return ['Does it involve defamation or the spreading of fear (yes/no)?']
-            else:
+            elif message.content == 'yes':
                 self.state = ReviewState.REVIEW_TIER_4
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_DISCRIMINATE_SENSITIVE and message.content in ('yes', 'no'):
             if message.content == 'yes':
                 self.state = ReviewState.REVIEW_INCITE_VIOLENCE
-            else:
+            elif message.content == 'no':
                 self.state = ReviewState.REVIEW_TIER_1
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_DISCRIMINATE_HARASSMENT and message.content in ('yes', 'no'):
             if message.content == 'yes':
                 self.state = ReviewState.REVIEW_INCITE_VIOLENCE
-            else:
+            elif message.content == 'no':
                 self.state = ReviewState.REVIEW_TIER_3
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_DISCRIMINATE_LOW and message.content in ('yes', 'no'):
             if message.content == 'no':
                 self.state = ReviewState.REVIEW_TIER_1
-            else:
+            elif message.content == 'yes':
                 self.state = ReviewState.REVIEW_DEFAMATION
                 return ['Does it involve defamation or the spreading of fear (yes/no)?']
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_DISCRIMINATE_HIGH and message.content in ('yes', 'no'):
             if message.content == 'no':
                 self.state = ReviewState.REVIEW_TIER_3
-            else:
+            elif message.content == 'yes':
                 self.state = ReviewState.REVIEW_TIER_4
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_ABUSIVE and message.content in ('yes', 'no'):
             if message.content == 'no':
                 self.state = ReviewState.REVIEW_TIER_0
-            else:
+            elif message.content == 'yes':
                 self.state = ReviewState.REVIEW_TIER_1
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_DISCRETIONARY and message.content in ('0', '1', '2', '3', '4', '5'):
             if message.content == '0':
@@ -358,6 +577,8 @@ class Review:
                 self.state = ReviewState.REVIEW_TIER_4
             if message.content == '5':
                 self.state = ReviewState.REVIEW_TIER_4_CSAM
+            else:
+                return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_TIER_0:
             self.state = ReviewState.REVIEW_COMPLETE
@@ -386,86 +607,17 @@ class Review:
             return ["Removed content. Permanently banned the offending user. "
                     "Stored content securely as required by law. Reported to NCMEC."]
 
+        if self.state == ReviewState.REVIEW_CANNOT_REVIEW:
+            return ['Review closed.']
+
         else:
             return ['Invalid action. Please select only valid actions.']
+
+    def cannot_review(self):
+        return self.state == ReviewState.REVIEW_CANNOT_REVIEW
 
     def review_complete(self):
         return self.state == ReviewState.REVIEW_COMPLETE
 
     def review_cancelled(self):
         return self.state == ReviewState.REVIEW_CANCELLED
-
-        ####### OLD
-    #
-    #     if self.state == ReviewState.REVIEW_ILLEGAL_OR_THREATENING and message.content in ('1', '2'):
-    #         if message.content == '1':
-    #             self.state = ReviewState.REVIEW_HARASSMENT
-    #
-    #             return ['Is the content illegal (yes/no)?']
-    #         else:
-    #             self.state = ReviewState.REVIEW_SENSITIVE
-    #             return ['To which category does this report belong? Please respond with the corresponding number:'
-    #                     '\n(1) CSAM\n(2) Self Harm \n(3) Other\n']
-    #
-    #     if self.state == ReviewState.REVIEW_NOT_ILLEGAL_OR_THREATENING and message.content in ('1', '2', '3'):
-    #         if message.content == '1':
-    #             self.state = ReviewState.REVIEW_FRAUD
-    #             return ['Has the user previously received a disciplinary action (yes/no)?']
-    #         elif message.content == '2':
-    #             self.state = ReviewState.REVIEW_HATE_SPEECH
-    #             return ['Has the user previously received a disciplinary action (yes/no)?']
-    #         else:
-    #             self.state = ReviewState.REVIEW_OTHER
-    #             return ['Has the user previously received a disciplinary action (yes/no)?']
-    #
-    #     if self.state in (ReviewState.REVIEW_FRAUD, ReviewState.REVIEW_HATE_SPEECH, ReviewState.REVIEW_OTHER) and message.content in ('yes', 'no'):
-    #         self.review_complete()
-    #         self.state = ReviewState.REVIEW_COMPLETE
-    #         if message.content == 'yes':
-    #             return ['Take down post - move reported user one step up the disciplinary actions hierarchy']
-    #         else:
-    #             return ['Take down post - send user a warning']
-    #
-    #     if self.state == ReviewState.REVIEW_SENSITIVE and message.content in ('1', '2', '3'):
-    #         if message.content == '1':
-    #             self.review_complete()
-    #             self.state = ReviewState.REVIEW_COMPLETE
-    #             return ['Report to NCMEC + Ban user + store content securely as required by law']
-    #         if message.content == '2':
-    #             self.review_complete()
-    #             self.state = ReviewState.REVIEW_COMPLETE
-    #             return ['Connect reported user with self help resources']
-    #         if message.content == '3':
-    #             self.state = ReviewState.REVIEW_HARASSMENT
-    #             return ['Is the content illegal (yes/no)?']
-    #
-    #     if self.state == ReviewState.REVIEW_HARASSMENT and message.content in ('yes', 'no'):
-    #         if message.content == 'yes':
-    #             self.review_complete()
-    #             self.state = ReviewState.REVIEW_COMPLETE
-    #             return ['Ban User + Store content securely as required by law']
-    #         else:
-    #             self.state = ReviewState.REVIEW_NOT_ILLEGAL
-    #             return ['Has the reported user previously received a one week feature block (yes/no)?']
-    #
-    #     if self.state == ReviewState.REVIEW_NOT_ILLEGAL and message.content in ('yes','no'):
-    #         self.review_complete()
-    #         self.state = ReviewState.REVIEW_COMPLETE
-    #         if message.content == 'yes':
-    #             return ['One week mute/suspension + warning']
-    #         else:
-    #             return ['Ban User']
-    #
-    #     else:
-    #         return ['Invalid action. Please select only valid actions.']
-    #
-    # def review_complete(self):
-    #     return self.state == ReviewState.REVIEW_COMPLETE
-    #
-    # def review_cancelled(self):
-    #     return self.state == ReviewState.REVIEW_CANCELLED
-    #
-    #
-
-    
-

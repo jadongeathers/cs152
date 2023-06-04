@@ -5,8 +5,6 @@ from bot import ModBot
 
 
 # class OpenAI_Mod:
-#     openai.organization = "org-YVZe9QFuR0Ke0J0rqr7l2R2L"
-#     openai.api_key = "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"
 #     # print(openai.Model.list())
 #     def ds_test(self):
 #         ds = datasets.load_dataset("classla/FRENK-hate-en","multiclass")

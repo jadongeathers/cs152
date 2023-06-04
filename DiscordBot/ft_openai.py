@@ -29,9 +29,6 @@ from bot import ModBot
 #
 
 class OpenAIMod:
-    openai.organization = "org-YVZe9QFuR0Ke0J0rqr7l2R2L"
-    openai.api_key = "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"
-
     def discord_eval(self, message):
         response = openai.Moderation.create(message)
         output = response["results"]
@@ -42,4 +39,3 @@ class OpenAIMod:
                     eval.append(type + ": " + str(key['category_scores'][type]))
         return eval
 
-    

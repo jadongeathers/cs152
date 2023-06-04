@@ -212,27 +212,25 @@ class ModBot(discord.Client):
                     self.report_in_progress = False
 
         if message.channel.name == f'group-{self.group_num}':
-            google_score = self.eval_google(message)
-            openai_scores = OpenAIMod.discord_eval(message)
+            # google_score = self.eval_google(message)
+            # openai_scores = OpenAIMod.discord_eval(message)
+            scores = self.eval_google(message)
+            score = 0
+            for key in scores:
+                score += COEFFS[key] * scores[key]
+            score += COEFFS['intercept']
 
-            # added this to eval_google
-            # scores = self.eval_google(message)
-            # score = 0
-            # for key in scores:
-            #     score += COEFFS[key] * scores[key]
-            # score += COEFFS['intercept']
-            #
-            # if score > 0.5:
-            #     await mod_channel.send('Made automatic report.')
-            #     report = Report(self)
-            #     report.reporter_id = 'BOT'
-            #     report.offending_message = message
-            #     self.data_manager.add_user_report('BOT')
-            #     if 'BOT' not in self.unreviewed:
-            #         self.unreviewed['BOT'] = []
-            #     self.unreviewed['BOT'].append(report)
-            await mod_channel.send(self.code_format(google_score))
-            await mod_channel.send(self.code_format(openai_scores))
+            if score > 0.5:
+                await mod_channel.send('Made automatic report.')
+                report = Report(self)
+                report.reporter_id = 'BOT'
+                report.offending_message = message
+                self.data_manager.add_user_report('BOT')
+                if 'BOT' not in self.unreviewed:
+                    self.unreviewed['BOT'] = []
+                self.unreviewed['BOT'].append(report)
+            await mod_channel.send(self.code_format(score))
+            # await mod_channel.send(self.code_format(openai_scores))
 
 
         return
@@ -254,23 +252,7 @@ class ModBot(discord.Client):
         }
         response = google.comments().analyze(body=analyze_request).execute()
         probs = {flag: response['attributeScores'][flag]['summaryScore']['value'] for flag in response['attributeScores']}
-
-        mod_channel = self.mod_channels[message.guild.id]
-        score = 0
-        for key in probs:
-            score += COEFFS[key] * probs[key]
-        score += COEFFS['intercept']
-
-        if score > 0.5:
-            await mod_channel.send('Made automatic report.')
-            report = Report(self)
-            report.reporter_id = 'BOT'
-            report.offending_message = message
-            self.data_manager.add_user_report('BOT')
-            if 'BOT' not in self.unreviewed:
-                self.unreviewed['BOT'] = []
-            self.unreviewed['BOT'].append(report)
-        return score
+        return probs
 
     def code_format(self, text):
         if text.dtype == int:

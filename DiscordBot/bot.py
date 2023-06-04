@@ -229,6 +229,7 @@ class ModBot(discord.Client):
                 if 'BOT' not in self.unreviewed:
                     self.unreviewed['BOT'] = []
                 self.unreviewed['BOT'].append(report)
+
             await mod_channel.send(self.code_format(score))
             # await mod_channel.send(self.code_format(openai_scores))
 
@@ -255,10 +256,10 @@ class ModBot(discord.Client):
         return probs
 
     def code_format(self, text):
-        if text.dtype == int:
-            return "Evaluated by Google Perspective: '" + str(text)+ "'"
-        if text.dtype == list:
-                return "Evaluated by OpenAI's Moderator: '" + str(text)+ "'"
+        # if text.dtype == int:
+        return "Evaluated by Google Perspective: '" + str(text)+ "'"
+        # if text.dtype == list:
+        #         return "Evaluated by OpenAI's Moderator: '" + str(text)+ "'"
         # return "Evaluated: '" + str(text)+ "'"
 
 client = ModBot()

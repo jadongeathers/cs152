@@ -11,6 +11,7 @@ from googleapiclient import discovery
 from report import Report, Review
 import pdb
 from data_manager import DataManager
+from ft_openai import OpenAIMod
 
 # Thresholds for classification
 COEFFS = {
@@ -47,7 +48,6 @@ google = discovery.build(
   discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
   static_discovery=False,
 )
-
 
 class ModBot(discord.Client):
     def __init__(self): 
@@ -212,22 +212,28 @@ class ModBot(discord.Client):
                     self.report_in_progress = False
 
         if message.channel.name == f'group-{self.group_num}':
-            scores = self.eval_text(message)
-            score = 0
-            for key in scores:
-                score += COEFFS[key] * scores[key]
-            score += COEFFS['intercept']
+            google_score = self.eval_google(message)
+            openai_scores = OpenAIMod.discord_eval(message)
 
-            if score > 0.5:
-                await mod_channel.send('Made automatic report.')
-                report = Report(self)
-                report.reporter_id = 'BOT'
-                report.offending_message = message
-                self.data_manager.add_user_report('BOT')
-                if 'BOT' not in self.unreviewed:
-                    self.unreviewed['BOT'] = []
-                self.unreviewed['BOT'].append(report)
-            await mod_channel.send(self.code_format(score))
+            # added this to eval_google
+            # scores = self.eval_google(message)
+            # score = 0
+            # for key in scores:
+            #     score += COEFFS[key] * scores[key]
+            # score += COEFFS['intercept']
+            #
+            # if score > 0.5:
+            #     await mod_channel.send('Made automatic report.')
+            #     report = Report(self)
+            #     report.reporter_id = 'BOT'
+            #     report.offending_message = message
+            #     self.data_manager.add_user_report('BOT')
+            #     if 'BOT' not in self.unreviewed:
+            #         self.unreviewed['BOT'] = []
+            #     self.unreviewed['BOT'].append(report)
+            await mod_channel.send(self.code_format(google_score))
+            await mod_channel.send(self.code_format(openai_score))
+
 
         return
 
@@ -237,7 +243,7 @@ class ModBot(discord.Client):
         # scores = self.eval_text(message.content)
         # await mod_channel.send(self.code_format(scores))
 
-    def eval_text(self, message):
+    def eval_google(self, message):
         analyze_request = {
             'comment': {'text': message.content},
             'requestedAttributes': {
@@ -248,17 +254,30 @@ class ModBot(discord.Client):
         }
         response = google.comments().analyze(body=analyze_request).execute()
         probs = {flag: response['attributeScores'][flag]['summaryScore']['value'] for flag in response['attributeScores']}
-        return probs
 
-    
+        mod_channel = self.mod_channels[message.guild.id]
+        score = 0
+        for key in probs:
+            score += COEFFS[key] * probs[key]
+        score += COEFFS['intercept']
+
+        if score > 0.5:
+            await mod_channel.send('Made automatic report.')
+            report = Report(self)
+            report.reporter_id = 'BOT'
+            report.offending_message = message
+            self.data_manager.add_user_report('BOT')
+            if 'BOT' not in self.unreviewed:
+                self.unreviewed['BOT'] = []
+            self.unreviewed['BOT'].append(report)
+        return score
+
     def code_format(self, text):
-        ''''
-        TODO: Once you know how you want to show that a message has been 
-        evaluated, insert your code here for formatting the string to be 
-        shown in the mod channel. 
-        '''
-        return "Evaluated: '" + str(text)+ "'"
-
+        if text.dtype == int:
+            return "Evaluated by Google Perspective: '" + str(text)+ "'"
+        if text.dtype == list:
+                return "Evaluated by OpenAI's Moderator: '" + str(text)+ "'"
+        # return "Evaluated: '" + str(text)+ "'"
 
 client = ModBot()
 client.run(discord_token)

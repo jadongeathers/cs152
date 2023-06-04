@@ -232,7 +232,7 @@ class ModBot(discord.Client):
             #         self.unreviewed['BOT'] = []
             #     self.unreviewed['BOT'].append(report)
             await mod_channel.send(self.code_format(google_score))
-            await mod_channel.send(self.code_format(openai_score))
+            await mod_channel.send(self.code_format(openai_scores))
 
 
         return

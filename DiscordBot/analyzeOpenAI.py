@@ -126,17 +126,18 @@ class OpenAIMod:
     #
     #     breakpoint()
 
-    # testing to see abuse categories detected/determined by OpenAI's Moderator API matches
-    # the attr
-    def ds_test(self):
-        messages = [example["test"] for example in self.ds["test"]]
-        for i in messages:
-            response = openai.Moderation.create(input = i)
-            output = response["results"]
-            for key in output:
-                for type in key["categories"]:
-                    if key["categories"][type] == True:
-                        return type
+    # need to write a column to the csv with predictions
+
+
+    # def ds_test(self):
+    #     messages = [example["test"] for example in self.ds["test"]]
+    #     for i in messages:
+    #         response = openai.Moderation.create(input = i)
+    #         output = response["results"]
+    #         for key in output:
+    #             for type in key["categories"]:
+    #                 if key["categories"][type] == True:
+    #                     return type
 
 
 if __name__ == '__main__':

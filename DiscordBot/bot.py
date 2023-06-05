@@ -13,12 +13,17 @@ import pdb
 from data_manager import DataManager
 from openai import OpenAIMod
 
-# Thresholds for classification
-COEFFS = {
+# Coefficients for Google Perspective classification
+GOOGLE_COEFFS = {
     'intercept': -1.3228379330359248,
     'INSULT': 3.8921009196729774,
     'IDENTITY_ATTACK': 0.9563236343157535,
     'THREAT': 0.31681785782996336
+}
+
+# Coefficients for OpenAI classification
+OPENAI_COEFFS = {
+
 }
 
 # Set up logging to the console
@@ -41,7 +46,7 @@ with open(token_path) as f:
 
 # Google Perspective API setup
 GOOGLE_API_KEY = google_token
-OPEN_AI_API_KEY = openai_token
+OPENAI_API_KEY = openai_token
 
 google = discovery.build(
   "commentanalyzer",
@@ -215,13 +220,13 @@ class ModBot(discord.Client):
 
         if message.channel.name == f'group-{self.group_num}':
             if model_type == 'google':
-            # google_score = self.eval_google(message)
-            # openai_scores = OpenAIMod.discord_eval(message)
+                # google_score = self.eval_google(message)
+                # openai_scores = OpenAIMod.discord_eval(message)
                 scores = self.eval_google(message)
                 score = 0
                 for key in scores:
-                    score += COEFFS[key] * scores[key]
-                score += COEFFS['intercept']
+                    score += GOOGLE_COEFFS[key] * scores[key]
+                score += GOOGLE_COEFFS['intercept']
 
                 if score > 0.5:
                     await mod_channel.send('Made automatic report.')
@@ -235,17 +240,49 @@ class ModBot(discord.Client):
                 await mod_channel.send(self.code_format(score))
 
             elif model_type == 'open_ai':
-                eval = OpenAIMod.discord_eval(message)
-                await mod_channel.send('Made automatic report.')
-                report = Report(self)
-                report.reporter_id = 'BOT'
-                report.offending_message = message
-                self.data_manager.add_user_report('BOT')
-                if 'BOT' not in self.unreviewed:
-                    self.unreviewed['BOT'] = []
-                self.unreviewed['BOT'].append(report)
-                await mod_channel.send(self.code_format(eval))
+                scores = OpenAIMod.discord_eval(message)
+                score = 0
+                for key in scores:
+                    score += OPENAI_COEFFS[key] * scores[key]
+                score += OPENAI_COEFFS['intercept']
 
+                if score > 0.5:
+                    await mod_channel.send('Made automatic report.')
+                    report = Report(self)
+                    report.reporter_id = 'BOT'
+                    report.offending_message = message
+                    self.data_manager.add_user_report('BOT')
+                    if 'BOT' not in self.unreviewed:
+                        self.unreviewed['BOT'] = []
+                    self.unreviewed['BOT'].append(report)
+                await mod_channel.send(self.code_format(score))
+
+            elif model_type == 'combo':
+                google_scores = self.eval_google(message)
+                google_score = 0
+                for key in google_scores:
+                    google_score += GOOGLE_COEFFS[key] * google_scores[key]
+                google_score += GOOGLE_COEFFS['intercept']
+
+                if google_score > 0.5:
+                    openai_scores = OpenAIMod.discord_eval(message)
+                    score = 0
+                    for key in openai_scores:
+                        score += OPENAI_COEFFS[key] * openai_scores[key]
+                    score += OPENAI_COEFFS['intercept']
+
+                    if score > 0.5:
+                        await mod_channel.send('Made automatic report.')
+                        report = Report(self)
+                        report.reporter_id = 'BOT'
+                        report.offending_message = message
+                        self.data_manager.add_user_report('BOT')
+                        if 'BOT' not in self.unreviewed:
+                            self.unreviewed['BOT'] = []
+                        self.unreviewed['BOT'].append(report)
+                    await mod_channel.send(self.code_format(score))
+
+                    # TODO: RETURN PREDICTION OF SEVERITY
 
             # await mod_channel.send(self.code_format(openai_scores))
 
@@ -276,6 +313,15 @@ class ModBot(discord.Client):
         # if text.dtype == list:
         #         return "Evaluated by OpenAI's Moderator: '" + str(text)+ "'"
         # return "Evaluated: '" + str(text)+ "'"
+
+
+import argparse
+
+ALLOWED_MODEL_TYPES = ["google", "open_ai", "combo"]
+parser = argparse.ArgumentParser()
+parser.add_argument("--model_type", type=str, choices=ALLOWED_MODEL_TYPES, help="Specify the model type (google, open_ai, combo)")
+args = parser.parse_args()
+model_type = args.model_type
 
 client = ModBot()
 client.run(discord_token)

@@ -214,7 +214,6 @@ class ModBot(discord.Client):
                     self.report_in_progress = False
 
         if message.channel.name == f'group-{self.group_num}':
-            model_type = 'google'
             if model_type == 'google':
             # google_score = self.eval_google(message)
             # openai_scores = OpenAIMod.discord_eval(message)

@@ -11,7 +11,7 @@ from googleapiclient import discovery
 from report import Report, Review
 import pdb
 from data_manager import DataManager
-from openai import OpenAIMod
+from analyzeOpenAI import OpenAIMod
 
 # Coefficients for Google Perspective classification
 GOOGLE_COEFFS = {

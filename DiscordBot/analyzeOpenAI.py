@@ -159,7 +159,7 @@ if __name__ == '__main__':
 #                     eval.append(type + ": " + str(key['category_scores'][type]))
 
 
-    
+
 # messages = [example["text"] for example in ds["test"]]
 # for i in messages:
 #     response = openai.Moderation.create(input = i)

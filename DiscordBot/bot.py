@@ -144,12 +144,6 @@ class ModBot(discord.Client):
             self.reports.pop(author_id)
 
     async def handle_channel_message(self, message):
-        # ORIGINAL:
-        # Only handle messages sent in the "group-#" channel
-        # if not message.channel.name == f'group-{self.group_num}':
-        #     return
-
-        ##### START ADDED #####
 
         # Forward the message to the mod channel
         mod_channel = self.mod_channels[message.guild.id]
@@ -289,15 +283,7 @@ class ModBot(discord.Client):
 
                     # TODO: RETURN PREDICTION OF SEVERITY
 
-            # await mod_channel.send(self.code_format(openai_scores))
-
         return
-
-        ##### END ADDED #####
-
-        # ORIGINAL:
-        # scores = self.eval_text(message.content)
-        # await mod_channel.send(self.code_format(scores))
 
     def eval_google(self, message):
         analyze_request = {

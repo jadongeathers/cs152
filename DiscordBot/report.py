@@ -226,7 +226,7 @@ class Review:
             reply += "Which API would you like to use? \n"
             reply += "\n(1) Google Perspective\n(2) OpenAI\n(3) Google Perspective + OpenAI"
             return [reply]
-            
+
         if self.state == ReviewState.REVIEW_START_CATEGORY and message.content in ('1', '2', '3'):
             if message.content == '1':
                 self.model_type = 'google'

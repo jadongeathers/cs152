@@ -12,6 +12,7 @@ from report import Report, Review
 import pdb
 from data_manager import DataManager
 from analyzeOpenAI import OpenAIMod
+import math
 
 # Coefficients for Google Perspective classification
 GOOGLE_COEFFS = {
@@ -58,6 +59,9 @@ google = discovery.build(
   discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
   static_discovery=False,
 )
+
+def sigmoid(x):
+    return 1 / (1 + math.exp(-x))
 
 class ModBot(discord.Client):
     def __init__(self): 
@@ -224,6 +228,7 @@ class ModBot(discord.Client):
                 for key in scores:
                     score += GOOGLE_COEFFS[key] * scores[key]
                 score += GOOGLE_COEFFS['intercept']
+                score = sigmoid(score)
 
                 if score > 0.5:
                     await mod_channel.send('Made automatic report.')
@@ -243,6 +248,7 @@ class ModBot(discord.Client):
                 for key in scores:
                     score += OPENAI_COEFFS[key] * scores[key]
                 score += OPENAI_COEFFS['intercept']
+                score = sigmoid(score)
 
                 if score > 0.5:
                     await mod_channel.send('Made automatic report.')
@@ -261,16 +267,18 @@ class ModBot(discord.Client):
                 for key in google_scores:
                     google_score += GOOGLE_COEFFS[key] * google_scores[key]
                 google_score += GOOGLE_COEFFS['intercept']
+                google_score = sigmoid(google_score)
 
                 if google_score > 0.5:
                     openai_model = OpenAIMod()
                     openai_scores = openai_model.eval_text(message.content)
-                    score = 0
+                    openai_score = 0
                     for key in openai_scores:
-                        score += OPENAI_COEFFS[key] * openai_scores[key]
-                    score += OPENAI_COEFFS['intercept']
+                        openai_score += OPENAI_COEFFS[key] * openai_scores[key]
+                    openai_score += OPENAI_COEFFS['intercept']
+                    openai_score = sigmoid(openai_score)
 
-                    if score > 0.5:
+                    if openai_score > 0.5:
                         await mod_channel.send('Made automatic report.')
                         report = Report(self)
                         report.reporter_id = 'BOT'
@@ -279,7 +287,7 @@ class ModBot(discord.Client):
                         if 'BOT' not in self.unreviewed:
                             self.unreviewed['BOT'] = []
                         self.unreviewed['BOT'].append(report)
-                    await mod_channel.send(self.code_format(score))
+                    await mod_channel.send(self.code_format(openai_score))
 
                     # TODO: RETURN PREDICTION OF SEVERITY
 

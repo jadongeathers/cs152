@@ -6,6 +6,10 @@ from datasets import load_dataset
 import time
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+import numpy as np
+import math
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 
 def eval_text(google, message):
     analyze_request = {
@@ -29,11 +33,9 @@ def eval_text(google, message):
         #     return 
         
 
-def main():
-    hate_datasets = load_dataset('classla/FRENK-hate-en')
-    train_df = hate_datasets['train'].to_pandas()
+def trainGooglePerspective():
+    hate_datasets = load_dataset('classla/FRENK-hate-en',"multiclass")
     val_df = hate_datasets['validation'].to_pandas()
-    test_df = hate_datasets['test'].to_pandas()
 
 
     token_path = 'tokens.json'
@@ -62,12 +64,75 @@ def main():
     
     model_output = pd.DataFrame(model_output)
     y = val_df[~model_output.isna().sum(axis=1).astype(bool)].label.values
+    y = np.where((y == 1) | (y == 2) | (y == 3), 1, 0)
     X = model_output[~model_output.isna().sum(axis=1).astype(bool)].values
     clf = LogisticRegression(random_state=0).fit(X, y)
     print(f'\nOptimal coefficients are: intercept={clf.intercept_[0]}, {model_output.columns[0]}={clf.coef_[0][0]}, {model_output.columns[1]}={clf.coef_[0][1]}, {model_output.columns[2]}={clf.coef_[0][2]}\n')
-    breakpoint()
-        
+    # breakpoint()
 
+def sigmoid(x):
+  return 1 / (1 + math.exp(-x))
+
+def evaluateGooglePerspective():
+    COEFFS = {
+        'intercept': -1.3228379330359248,
+        'INSULT': 3.8921009196729774,
+        'IDENTITY_ATTACK': 0.9563236343157535,
+        'THREAT': 0.31681785782996336
+    }
+    hate_datasets = load_dataset('classla/FRENK-hate-en',"multiclass")
+    test_df = hate_datasets['test'].to_pandas()
+    test_df = test_df.iloc[:100,]
+
+
+    token_path = 'tokens.json'
+    if not os.path.isfile(token_path):
+        raise Exception(f"{token_path} not found!")
+    with open(token_path) as f:
+        # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
+        tokens = json.load(f)
+        google_token = tokens['google']
+
+    API_KEY = google_token
+
+    google = discovery.build(
+    "commentanalyzer",
+    "v1alpha1",
+    developerKey=API_KEY,
+    discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
+    static_discovery=False,
+    )
+
+    model_output = []
+    for i in range(test_df.shape[0]):
+        print(i)
+        time.sleep(1)
+        output = eval_text(google, test_df.loc[test_df.index[i],'text'])
+
+        score = 0
+        for key in output:
+            score += COEFFS[key] * output[key]
+        score += COEFFS['intercept']
+        score = sigmoid(score)
+
+        pred = int(score > 0.5)
+        model_output.append(pred)
+
+    model_output = np.array(model_output)
+    y_true = test_df[~np.isnan(model_output).astype(bool)].label.values
+    y_true = np.where((y_true == 1) | (y_true == 2) | (y_true == 3), 1, 0)
+    y_pred = model_output[~np.isnan(model_output)]
+
+    cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+    cm = cm / cm.sum()
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])
+    disp.plot()
+    plt.show()
+
+    # breakpoint()
+
+    
 
 if __name__ == '__main__':
-    main()
+    trainGooglePerspective()
+    # evaluateGooglePerspective()

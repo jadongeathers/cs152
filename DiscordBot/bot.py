@@ -36,6 +36,7 @@ with open(token_path) as f:
     tokens = json.load(f)
     discord_token = tokens['discord']
     google_token = tokens['google']
+    openai_token = tokens['open_ai']
 
 # Google Perspective API setup
 API_KEY = google_token

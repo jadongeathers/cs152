@@ -59,6 +59,11 @@ class OpenAIMod:
         print(f'\nOptimal coefficients are: intercept={clf.intercept_[0]}, {model_output.columns[0]}={clf.coef_[0][0]}, {model_output.columns[1]}={clf.coef_[0][1]}, {model_output.columns[2]}={clf.coef_[0][2]}\n')
         breakpoint()
 
+        # Optimal coefficients are: intercept=-1.6949516955386068,
+        # hate=2.514414538130454,
+        # hate/threatening=-0.11870110156245899,
+        # violence=-0.7040727776293726
+
     def sigmoid(x):
         return 1 / (1 + math.exp(-x))
 

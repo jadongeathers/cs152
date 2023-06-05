@@ -237,12 +237,24 @@ class ModBot(discord.Client):
                 await mod_channel.send(self.code_format(score))
 
             elif model_type == 'open_ai':
+<<<<<<< Updated upstream
                 openai_model = OpenAIMod()
                 scores = openai_model.discord_eval(message)
                 score = 0
                 for key in scores:
                     score += OPENAI_COEFFS[key] * scores[key]
                 score += OPENAI_COEFFS['intercept']
+=======
+                await mod_channel.send('Made automatic report.')
+                report = Report(self)
+                report.reporter_id = 'BOT'
+                report.offending_message = message
+                self.data_manager.add_user_report('BOT')
+                if 'BOT' not in self.unreviewed:
+                    self.unreviewed['BOT'] = []
+                self.unreviewed['BOT'].append(report)
+                await mod_channel.send(self.code_format(eval))
+>>>>>>> Stashed changes
 
                 if score > 0.5:
                     await mod_channel.send('Made automatic report.')

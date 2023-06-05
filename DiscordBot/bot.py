@@ -23,7 +23,10 @@ GOOGLE_COEFFS = {
 
 # Coefficients for OpenAI classification
 OPENAI_COEFFS = {
-
+    'intercept': -1.5949516955386068,
+    'hate': 2.514414538130454,
+    'hate/threatening': -0.11870110156245899,
+    'violence': -0.704727776293726
 }
 
 # Set up logging to the console

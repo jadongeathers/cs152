@@ -231,7 +231,7 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    await mod_channel.send('Made automatic report.')
+                    await mod_channel.send('\033[1m' + 'Made automatic report.')
                     report = Report(self)
                     report.reporter_id = 'BOT'
                     report.offending_message = message
@@ -251,7 +251,7 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    await mod_channel.send('Made automatic report.')
+                    await mod_channel.send('\033[1m' + 'Made automatic report.')
                     report = Report(self)
                     report.reporter_id = 'BOT'
                     report.offending_message = message
@@ -279,7 +279,7 @@ class ModBot(discord.Client):
                     openai_score = sigmoid(openai_score)
 
                     if openai_score > 0.5:
-                        await mod_channel.send('Made automatic report.')
+                        await mod_channel.send('\033[1m' + 'Made automatic report.')
                         report = Report(self)
                         report.reporter_id = 'BOT'
                         report.offending_message = message
@@ -287,9 +287,11 @@ class ModBot(discord.Client):
                         if 'BOT' not in self.unreviewed:
                             self.unreviewed['BOT'] = []
                         self.unreviewed['BOT'].append(report)
-                    await mod_channel.send(self.code_format(openai_score))
+                        await mod_channel.send(self.code_format(openai_score))
 
-                    # TODO: RETURN PREDICTION OF SEVERITY
+                        if max(openai_scores, key=openai_scores.get) == 'hate/threatening':
+                            await mod_channel.send('\033[1m' + 'This message may be illegal or cause immediate harm to users.')
+
 
         return
 
@@ -313,7 +315,8 @@ class ModBot(discord.Client):
         if model_type == 'open_ai':
             return "Evaluated by OpenAI: '" + str(text) + "'"
         if model_type == 'combo':
-            return "Evaluated by Google Perspective and OpenAI: '" + str(text)+ "'"
+            return "Evaluated by Google Perspective and OpenAI: '" + str(text) + "'"
+
         # if text.dtype == list:
         #         return "Evaluated by OpenAI's Moderator: '" + str(text)+ "'"
         # return "Evaluated: '" + str(text)+ "'"

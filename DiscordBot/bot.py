@@ -11,6 +11,7 @@ from googleapiclient import discovery
 from report import Report, Review
 import pdb
 from data_manager import DataManager
+from ft_openai import OpenAIMod
 
 # Thresholds for classification
 COEFFS = {
@@ -48,7 +49,6 @@ google = discovery.build(
   discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
   static_discovery=False,
 )
-
 
 class ModBot(discord.Client):
     def __init__(self): 
@@ -213,7 +213,9 @@ class ModBot(discord.Client):
                     self.report_in_progress = False
 
         if message.channel.name == f'group-{self.group_num}':
-            scores = self.eval_text(message)
+            # google_score = self.eval_google(message)
+            # openai_scores = OpenAIMod.discord_eval(message)
+            scores = self.eval_google(message)
             score = 0
             for key in scores:
                 score += COEFFS[key] * scores[key]
@@ -228,7 +230,9 @@ class ModBot(discord.Client):
                 if 'BOT' not in self.unreviewed:
                     self.unreviewed['BOT'] = []
                 self.unreviewed['BOT'].append(report)
+
             await mod_channel.send(self.code_format(score))
+            # await mod_channel.send(self.code_format(openai_scores))
 
         return
 
@@ -238,7 +242,7 @@ class ModBot(discord.Client):
         # scores = self.eval_text(message.content)
         # await mod_channel.send(self.code_format(scores))
 
-    def eval_text(self, message):
+    def eval_google(self, message):
         analyze_request = {
             'comment': {'text': message.content},
             'requestedAttributes': {
@@ -251,15 +255,12 @@ class ModBot(discord.Client):
         probs = {flag: response['attributeScores'][flag]['summaryScore']['value'] for flag in response['attributeScores']}
         return probs
 
-    
     def code_format(self, text):
-        ''''
-        TODO: Once you know how you want to show that a message has been 
-        evaluated, insert your code here for formatting the string to be 
-        shown in the mod channel. 
-        '''
-        return "Evaluated: '" + str(text)+ "'"
-
+        # if text.dtype == int:
+        return "Evaluated by Google Perspective: '" + str(text)+ "'"
+        # if text.dtype == list:
+        #         return "Evaluated by OpenAI's Moderator: '" + str(text)+ "'"
+        # return "Evaluated: '" + str(text)+ "'"
 
 client = ModBot()
 client.run(discord_token)

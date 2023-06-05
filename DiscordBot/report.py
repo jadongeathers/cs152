@@ -193,7 +193,6 @@ class ReviewState(Enum):
     REVIEW_NO_ACTION = auto()
     REVIEW_CANNOT_REVIEW = auto()
     REVIEW_BOT = auto()
-    REVIEW_START_CATEGORY = auto()
 
 class Review:
     START_KEYWORD = "review"
@@ -221,20 +220,8 @@ class Review:
             return ["Review cancelled."]
         
         if self.state == ReviewState.REVIEW_START:
-            self.state = ReviewState.REVIEW_START_CATEGORY
             reply = "Thank you for starting the review process. \n"
-            reply += "Which API would you like to use? \n"
-            reply += "\n(1) Google Perspective\n(2) OpenAI\n(3) Google Perspective + OpenAI"
-            return [reply]
-
-        if self.state == ReviewState.REVIEW_START_CATEGORY and message.content in ('1', '2', '3'):
-            if message.content == '1':
-                self.model_type = 'google'
-            elif message.content == '2':
-                self.model_type = 'open_ai'
-            elif message.content == '3':
-                self.model_type = 'combo'
-            reply = "Which category would you like to review? \n"
+            reply += "Which category would you like to review? \n"
             reply += "\n(1) Fraud\n(2) Verbal Abuse\n(3) Harassment/Threats of Violence"
             reply += "\n(4) Sensitive/Disturbing Content\n(5) Other\n(6) Automatic Reports"
             self.state = ReviewState.REVIEW_FIRST_MESSAGE

@@ -233,7 +233,6 @@ class ModBot(discord.Client):
             await mod_channel.send(self.code_format(score))
             # await mod_channel.send(self.code_format(openai_scores))
 
-
         return
 
         ##### END ADDED #####

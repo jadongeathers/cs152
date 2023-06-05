@@ -11,7 +11,7 @@ from googleapiclient import discovery
 from report import Report, Review
 import pdb
 from data_manager import DataManager
-from ft_openai import OpenAIMod
+from openai import OpenAIMod
 
 # Thresholds for classification
 COEFFS = {

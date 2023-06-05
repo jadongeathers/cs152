@@ -240,7 +240,8 @@ class ModBot(discord.Client):
                 await mod_channel.send(self.code_format(score))
 
             elif model_type == 'open_ai':
-                scores = OpenAIMod.discord_eval(message)
+                openai_model = OpenAIMod()
+                scores = openai_model.discord_eval(message)
                 score = 0
                 for key in scores:
                     score += OPENAI_COEFFS[key] * scores[key]
@@ -265,7 +266,8 @@ class ModBot(discord.Client):
                 google_score += GOOGLE_COEFFS['intercept']
 
                 if google_score > 0.5:
-                    openai_scores = OpenAIMod.discord_eval(message)
+                    openai_model = OpenAIMod()
+                    openai_scores = openai_model.discord_eval(message)
                     score = 0
                     for key in openai_scores:
                         score += OPENAI_COEFFS[key] * openai_scores[key]

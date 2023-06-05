@@ -231,7 +231,7 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    await mod_channel.send('\033[1m' + 'Made automatic report.')
+                    await mod_channel.send('**Made automatic report.**')
                     report = Report(self)
                     report.reporter_id = 'BOT'
                     report.offending_message = message
@@ -251,7 +251,7 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    await mod_channel.send('\033[1m' + 'Made automatic report.')
+                    await mod_channel.send('**Made automatic report.**')
                     report = Report(self)
                     report.reporter_id = 'BOT'
                     report.offending_message = message
@@ -279,7 +279,7 @@ class ModBot(discord.Client):
                     openai_score = sigmoid(openai_score)
 
                     if openai_score > 0.5:
-                        await mod_channel.send('\033[1m' + 'Made automatic report.')
+                        await mod_channel.send('**Made automatic report.**')
                         report = Report(self)
                         report.reporter_id = 'BOT'
                         report.offending_message = message
@@ -290,8 +290,7 @@ class ModBot(discord.Client):
                         await mod_channel.send(self.code_format(openai_score))
 
                         if max(openai_scores, key=openai_scores.get) == 'hate/threatening':
-                            await mod_channel.send('\033[1m' + 'This message may be illegal or cause immediate harm to users.')
-
+                            await mod_channel.send('**This message may be illegal or cause immediate harm to users.**')
 
         return
 

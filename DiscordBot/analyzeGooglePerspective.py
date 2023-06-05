@@ -64,21 +64,21 @@ def trainGooglePerspective():
     
     model_output = pd.DataFrame(model_output)
     y = val_df[~model_output.isna().sum(axis=1).astype(bool)].label.values
-    y = np.where((y == 1) | (y == 2) | (y == 3), 1, 0)
+    y = np.where((y == 1) | (y == 2), 1, 0)
     X = model_output[~model_output.isna().sum(axis=1).astype(bool)].values
     clf = LogisticRegression(random_state=0).fit(X, y)
     print(f'\nOptimal coefficients are: intercept={clf.intercept_[0]}, {model_output.columns[0]}={clf.coef_[0][0]}, {model_output.columns[1]}={clf.coef_[0][1]}, {model_output.columns[2]}={clf.coef_[0][2]}\n')
-    # breakpoint()
+    breakpoint()
 
 def sigmoid(x):
   return 1 / (1 + math.exp(-x))
 
 def evaluateGooglePerspective():
     COEFFS = {
-        'intercept': -1.3228379330359248,
-        'INSULT': 3.8921009196729774,
-        'IDENTITY_ATTACK': 0.9563236343157535,
-        'THREAT': 0.31681785782996336
+        'intercept': -1.8430630461127375,
+        'INSULT': 3.0665049605198584,
+        'IDENTITY_ATTACK': 0.21195243081036308,
+        'THREAT': 0.16239476863923974
     }
     hate_datasets = load_dataset('classla/FRENK-hate-en',"multiclass")
     test_df = hate_datasets['test'].to_pandas()
@@ -113,6 +113,7 @@ def evaluateGooglePerspective():
         for key in output:
             score += COEFFS[key] * output[key]
         score += COEFFS['intercept']
+
         score = sigmoid(score)
 
         pred = int(score > 0.5)
@@ -120,19 +121,20 @@ def evaluateGooglePerspective():
 
     model_output = np.array(model_output)
     y_true = test_df[~np.isnan(model_output).astype(bool)].label.values
-    y_true = np.where((y_true == 1) | (y_true == 2) | (y_true == 3), 1, 0)
+    y_true = np.where((y_true == 1) | (y_true == 2), 1, 0)
     y_pred = model_output[~np.isnan(model_output)]
 
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     cm = cm / cm.sum()
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])
     disp.plot()
+    plt.title('Google Perspective Confusion Matrix')
     plt.show()
 
-    # breakpoint()
+    breakpoint()
 
     
 
 if __name__ == '__main__':
-    trainGooglePerspective()
-    # evaluateGooglePerspective()
+    # trainGooglePerspective()
+    evaluateGooglePerspective()

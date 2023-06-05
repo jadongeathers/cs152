@@ -123,7 +123,6 @@ def evaluateGooglePerspective():
     y_true = test_df[~np.isnan(model_output).astype(bool)].label.values
     y_true = np.where((y_true == 1) | (y_true == 2), 1, 0)
     y_pred = model_output[~np.isnan(model_output)]
-
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     cm = cm / cm.sum()
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])

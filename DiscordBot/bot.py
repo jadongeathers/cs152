@@ -40,12 +40,13 @@ with open(token_path) as f:
     openai_token = tokens['open_ai']
 
 # Google Perspective API setup
-API_KEY = google_token
+GOOGLE_API_KEY = google_token
+OPEN_AI_API_KEY = openai_token
 
 google = discovery.build(
   "commentanalyzer",
   "v1alpha1",
-  developerKey=API_KEY,
+  developerKey=GOOGLE_API_KEY,
   discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
   static_discovery=False,
 )

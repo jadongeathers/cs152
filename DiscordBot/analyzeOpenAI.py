@@ -1,5 +1,5 @@
 import os
-import analyzeOpenAI
+import openai
 import datasets
 import json
 import pandas as pd

@@ -115,14 +115,13 @@ def evaluateGooglePerspective():
         score += COEFFS['intercept']
 
         score = sigmoid(score)
-
-        pred = int(score > 0.5)
-        model_output.append(pred)
+        model_output.append(score)
 
     model_output = np.array(model_output)
     y_true = test_df[~np.isnan(model_output).astype(bool)].label.values
     y_true = np.where((y_true == 1) | (y_true == 2), 1, 0)
-    y_pred = model_output[~np.isnan(model_output)]
+    y_pred_scores = model_output[~np.isnan(model_output)]
+    y_pred = np.where(y_pred_scores > 0.5, 1, 0)
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     cm = cm / cm.sum()
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])
@@ -130,7 +129,12 @@ def evaluateGooglePerspective():
     plt.title('Google Perspective Confusion Matrix')
     plt.show()
 
+    test_df['our_target'] = y_true
+    test_df['perspective_prediction'] = y_pred
+    test_df['perspective_scores'] = y_pred_scores
     breakpoint()
+    print('Do you want to overwright test_samples.csv?')
+    test_df.to_csv('test_samples.csv')
 
     
 

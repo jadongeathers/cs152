@@ -238,6 +238,7 @@ class ModBot(discord.Client):
 
             elif model_type == 'open_ai':
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 openai_model = OpenAIMod()
                 scores = openai_model.discord_eval(message)
                 score = 0
@@ -245,6 +246,8 @@ class ModBot(discord.Client):
                     score += OPENAI_COEFFS[key] * scores[key]
                 score += OPENAI_COEFFS['intercept']
 =======
+=======
+>>>>>>> Stashed changes
                 await mod_channel.send('Made automatic report.')
                 report = Report(self)
                 report.reporter_id = 'BOT'

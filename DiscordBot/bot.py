@@ -238,7 +238,7 @@ class ModBot(discord.Client):
 
             elif model_type == 'open_ai':
                 openai_model = OpenAIMod()
-                scores = openai_model.eval_text(message)
+                scores = openai_model.eval_text(message.content)
                 score = 0
                 for key in scores:
                     score += OPENAI_COEFFS[key] * scores[key]
@@ -264,7 +264,7 @@ class ModBot(discord.Client):
 
                 if google_score > 0.5:
                     openai_model = OpenAIMod()
-                    openai_scores = openai_model.eval_text(message)
+                    openai_scores = openai_model.eval_text(message.content)
                     score = 0
                     for key in openai_scores:
                         score += OPENAI_COEFFS[key] * openai_scores[key]

@@ -300,7 +300,12 @@ class ModBot(discord.Client):
 
     def code_format(self, text):
         # if text.dtype == int:
-        return "Evaluated by Google Perspective: '" + str(text)+ "'"
+        if model_type == 'google':
+            return "Evaluated by Google Perspective: '" + str(text)+ "'"
+        if model_type == 'open_ai':
+            return "Evaluated by OpenAI: '" + str(text) + "'"
+        if model_type == 'combo':
+            return "Evaluated by Google Perspective and OpenAI: '" + str(text)+ "'"
         # if text.dtype == list:
         #         return "Evaluated by OpenAI's Moderator: '" + str(text)+ "'"
         # return "Evaluated: '" + str(text)+ "'"

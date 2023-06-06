@@ -16,7 +16,7 @@ class ChatCompletionMod:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a content moderation system. Classify each input as either violent speech, hateful speech, or not threatening.",
+                    "content": "You are a content moderation system. Classify each input as either violent speech, hateful speech, spam, scam, phishing, or not threatening.",
                 },
                 {
                     "role": "user",

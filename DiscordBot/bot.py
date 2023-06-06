@@ -279,8 +279,10 @@ class ModBot(discord.Client):
 
                 # text_type, either violent speech, hateful speech, or not threatening
                 text_type = chatcompletion_model.eval_text(message.content)
-                print("The message sent by the user: " + message.content)
-                print(
+                await mod_channel.send(
+                    f'Forwarded message:\n{message.author.name}: "{message.content}"'
+                )
+                await mod_channel.send(
                     "This message is classified by chat completion model as: "
                     + text_type
                 )

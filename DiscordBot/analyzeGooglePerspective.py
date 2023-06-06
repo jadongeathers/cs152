@@ -9,6 +9,7 @@ from sklearn.linear_model import LogisticRegression
 import numpy as np
 import math
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib
 import matplotlib.pyplot as plt
 from token_handler import handle_tokens
 
@@ -113,9 +114,13 @@ def evaluateGooglePerspective():
     y_pred = np.where(y_pred_scores > 0.5, 1, 0)
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     cm = cm / cm.sum()
+    matplotlib.rcParams.update({'font.size': 18})
+    fig, ax = plt.subplots()
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])
-    disp.plot()
-    plt.title("Google Perspective Confusion Matrix")
+    disp.plot(cmap='Blues', ax=ax)
+    plt.title("Google Perspective", fontdict={'family': '.Keyboard', 'size': 16})
+    plt.xlabel('Predicted Label', fontdict={'family': '.Keyboard', 'size': 15})
+    plt.ylabel('True Label', fontdict={'family': '.Keyboard', 'size': 15})
     plt.show()
 
     test_df["our_target"] = y_true

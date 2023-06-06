@@ -20,5 +20,10 @@ def handle_tokens(model):
             openai_organization = tokens["openai_organization"]
             openai_token = tokens["open_ai"]
             return openai_organization, openai_token
+        elif model == "bot":
+            discord_token = tokens["discord"]
+            google_token = tokens["google"]
+            openai_token = tokens["open_ai"]
+            return discord_token, google_token, openai_token
         elif model == "combo":
             return

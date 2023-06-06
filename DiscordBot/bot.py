@@ -16,6 +16,7 @@ from data_manager import DataManager
 from analyzeOpenAI import OpenAIMod
 from chatCompletion import ChatCompletionMod
 import math
+from token_handler import handle_tokens
 
 # Coefficients for Google Perspective classification
 GOOGLE_COEFFS = {
@@ -42,20 +43,7 @@ handler.setFormatter(
 )
 logger.addHandler(handler)
 
-# There should be a file called 'tokens.json' inside the same folder as this file
-token_path = "tokens.json"
-if not os.path.isfile(token_path):
-    raise Exception(f"{token_path} not found!")
-with open(token_path) as f:
-    # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
-    tokens = json.load(f)
-    discord_token = tokens["discord"]
-    google_token = tokens["google"]
-    openai_token = tokens["open_ai"]
-
-# Google Perspective API setup
-GOOGLE_API_KEY = google_token
-OPENAI_API_KEY = openai_token
+discord_token, GOOGLE_API_KEY, OPENAI_API_KEY = handle_tokens("bot")
 
 google = discovery.build(
     "commentanalyzer",
@@ -321,8 +309,13 @@ class ModBot(discord.Client):
                     if openai_score > 0.5:
                         await file_automatic_report()
 
-                        if max(openai_scores, key=openai_scores.get) == "hate/threatening":
-                            await mod_channel.send("**This message may be illegal or cause immediate harm to users.**")
+                        if (
+                            max(openai_scores, key=openai_scores.get)
+                            == "hate/threatening"
+                        ):
+                            await mod_channel.send(
+                                "**This message may be illegal or cause immediate harm to users.**"
+                            )
 
         return
 

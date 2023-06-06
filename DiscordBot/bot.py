@@ -270,7 +270,7 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    file_automatic_report()
+                    await file_automatic_report()
                 await mod_channel.send(self.code_format(score))
 
             elif model_type == "open_ai":
@@ -283,7 +283,7 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    file_automatic_report()
+                    await file_automatic_report()
                 await mod_channel.send(self.code_format(score))
 
             elif model_type == "chat_completion":
@@ -295,7 +295,7 @@ class ModBot(discord.Client):
                 print("This message is classified as: " + text_type)
 
                 if text_type == "violent speech" or text_type == "hateful speech":
-                    file_automatic_report()
+                    await file_automatic_report()
 
             elif model_type == "combo":
                 # Combination of openai and google perspective (the ones that require our own training)
@@ -316,7 +316,7 @@ class ModBot(discord.Client):
                     openai_score = sigmoid(openai_score)
 
                     if openai_score > 0.5:
-                        file_automatic_report()
+                        await file_automatic_report()
 
                         if (
                             max(openai_scores, key=openai_scores.get)

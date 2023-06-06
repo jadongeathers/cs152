@@ -1,6 +1,7 @@
 import os
 import openai
 import json
+from token_handler import handle_tokens
 
 
 class ChatCompletionMod:
@@ -8,14 +9,7 @@ class ChatCompletionMod:
         pass
 
     def eval_text(self, message):
-        token_path = "tokens.json"
-        if not os.path.isfile(token_path):
-            pass
-        with open(token_path) as f:
-            # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
-            tokens = json.load(f)
-            openai.organization = tokens["openai_organization"]
-            openai.api_key = tokens["open_ai"]
+        openai.organization, openai.api_key = handle_tokens("chat_completion")
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",

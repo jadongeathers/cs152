@@ -10,6 +10,7 @@ import numpy as np
 import math
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
+from token_handler import handle_tokens
 
 
 def eval_text(google, message):
@@ -39,15 +40,7 @@ def trainGooglePerspective():
     hate_datasets = load_dataset("classla/FRENK-hate-en", "multiclass")
     val_df = hate_datasets["validation"].to_pandas()
 
-    token_path = "tokens.json"
-    if not os.path.isfile(token_path):
-        raise Exception(f"{token_path} not found!")
-    with open(token_path) as f:
-        # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
-        tokens = json.load(f)
-        google_token = tokens["google"]
-
-    API_KEY = google_token
+    API_KEY = handle_tokens("google")
 
     google = discovery.build(
         "commentanalyzer",

@@ -10,6 +10,7 @@ import time
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
+from token_handler import handle_tokens
 
 # from bot import ModBot
 
@@ -19,16 +20,7 @@ class OpenAIMod:
         self.ds = datasets.load_dataset("classla/FRENK-hate-en", "multiclass")
 
     def eval_text(self, message):
-        token_path = "tokens.json"
-        if not os.path.isfile(token_path):
-            raise Exception(f"{token_path} not found!")
-        with open(token_path) as f:
-            # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
-            tokens = json.load(f)
-            openai_token = tokens["open_ai"]
-
-        # API_KEY = openai_token
-        openai.api_key = openai_token
+        openai.api_key = handle_tokens("open_ai")
         response = openai.Moderation.create(input=message)
         output = response["results"]
         # eval = []

@@ -321,13 +321,8 @@ class ModBot(discord.Client):
                     if openai_score > 0.5:
                         await file_automatic_report()
 
-                        if (
-                            max(openai_scores, key=openai_scores.get)
-                            == "hate/threatening"
-                        ):
-                            await mod_channel.send(
-                                "**This message may be illegal or cause immediate harm to users.**"
-                            )
+                        if max(openai_scores, key=openai_scores.get) == "hate/threatening":
+                            await mod_channel.send("**This message may be illegal or cause immediate harm to users.**")
 
         return
 
@@ -344,7 +339,6 @@ class ModBot(discord.Client):
         return probs
 
     def code_format(self, text):
-        # if text.dtype == int:
         if model_type == "google":
             return "Evaluated by Google Perspective: '" + str(text) + "'"
         if model_type == "open_ai":
@@ -353,10 +347,6 @@ class ModBot(discord.Client):
             pass
         if model_type == "combo":
             return "Evaluated by Google Perspective and OpenAI: '" + str(text) + "'"
-
-        # if text.dtype == list:
-        #         return "Evaluated by OpenAI's Moderator: '" + str(text)+ "'"
-        # return "Evaluated: '" + str(text)+ "'"
 
 
 import argparse

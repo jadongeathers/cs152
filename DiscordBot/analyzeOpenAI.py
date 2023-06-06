@@ -38,6 +38,8 @@ class OpenAIMod:
         return probs
 
     def trainOpenAI(self):
+        # additional training specifically on a dataset involving LGBT-related speech in hopes of further improving at those types of speech
+
         valset = self.ds["validation"].to_pandas()
 
         output = []

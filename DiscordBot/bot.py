@@ -9,11 +9,12 @@ import logging
 import re
 import requests
 
-# from googleapiclient import discovery
+from googleapiclient import discovery
 from report import Report, Review
 import pdb
 from data_manager import DataManager
 from analyzeOpenAI import OpenAIMod
+from chatCompletion import ChatCompletionMod
 import math
 
 # Coefficients for Google Perspective classification
@@ -247,6 +248,17 @@ class ModBot(discord.Client):
                     self.report_in_progress = False
 
         if message.channel.name == f"group-{self.group_num}":
+
+            async def file_automatic_report():
+                await mod_channel.send("**Made automatic report.**")
+                report = Report(self)
+                report.reporter_id = "BOT"
+                report.offending_message = message
+                self.data_manager.add_user_report("BOT")
+                if "BOT" not in self.unreviewed:
+                    self.unreviewed["BOT"] = []
+                self.unreviewed["BOT"].append(report)
+
             if model_type == "google":
                 # google_score = self.eval_google(message)
                 # openai_scores = OpenAIMod.discord_eval(message)
@@ -258,14 +270,7 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    await mod_channel.send("**Made automatic report.**")
-                    report = Report(self)
-                    report.reporter_id = "BOT"
-                    report.offending_message = message
-                    self.data_manager.add_user_report("BOT")
-                    if "BOT" not in self.unreviewed:
-                        self.unreviewed["BOT"] = []
-                    self.unreviewed["BOT"].append(report)
+                    await file_automatic_report()
                 await mod_channel.send(self.code_format(score))
 
             elif model_type == "open_ai":
@@ -278,17 +283,25 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    await mod_channel.send("**Made automatic report.**")
-                    report = Report(self)
-                    report.reporter_id = "BOT"
-                    report.offending_message = message
-                    self.data_manager.add_user_report("BOT")
-                    if "BOT" not in self.unreviewed:
-                        self.unreviewed["BOT"] = []
-                    self.unreviewed["BOT"].append(report)
+                    await file_automatic_report()
                 await mod_channel.send(self.code_format(score))
 
+            elif model_type == "chat_completion":
+                chatcompletion_model = ChatCompletionMod()
+
+                # text_type, either violent speech, hateful speech, or not threatening
+                text_type = chatcompletion_model.eval_text(message.content)
+                print("The message sent by the user: " + message.content)
+                print(
+                    "This message is classified by chat completion model as: "
+                    + text_type
+                )
+
+                if text_type == "violent speech" or text_type == "hateful speech":
+                    await file_automatic_report()
+
             elif model_type == "combo":
+                # Combination of openai and google perspective (the ones that require our own training)
                 google_scores = self.eval_google(message)
                 google_score = 0
                 for key in google_scores:
@@ -306,15 +319,7 @@ class ModBot(discord.Client):
                     openai_score = sigmoid(openai_score)
 
                     if openai_score > 0.5:
-                        await mod_channel.send("**Made automatic report.**")
-                        report = Report(self)
-                        report.reporter_id = "BOT"
-                        report.offending_message = message
-                        self.data_manager.add_user_report("BOT")
-                        if "BOT" not in self.unreviewed:
-                            self.unreviewed["BOT"] = []
-                        self.unreviewed["BOT"].append(report)
-                        await mod_channel.send(self.code_format(openai_score))
+                        await file_automatic_report()
 
                         if (
                             max(openai_scores, key=openai_scores.get)
@@ -344,6 +349,8 @@ class ModBot(discord.Client):
             return "Evaluated by Google Perspective: '" + str(text) + "'"
         if model_type == "open_ai":
             return "Evaluated by OpenAI: '" + str(text) + "'"
+        if model_type == "chat_completion":
+            pass
         if model_type == "combo":
             return "Evaluated by Google Perspective and OpenAI: '" + str(text) + "'"
 
@@ -354,13 +361,13 @@ class ModBot(discord.Client):
 
 import argparse
 
-ALLOWED_MODEL_TYPES = ["google", "open_ai", "combo"]
+ALLOWED_MODEL_TYPES = ["google", "open_ai", "chat_completion", "combo"]
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--model_type",
     type=str,
     choices=ALLOWED_MODEL_TYPES,
-    help="Specify the model type (google, open_ai, combo)",
+    help="Specify the model type (google, open_ai, chat_completion, combo). Google will use the google perspective model, with additional training on an LGBT-speech related dataset. chat_completion will train on openAI's chat completion model, a general-use tool to generate conversational responses to a prompt (in this case, classifying the user's speech as violent, hateful, or non-threatening). open_ai will train on OpenAI's moderation model, a tool specifically meant to flag inappropriate content. Combo will do a combination of open_ai and google.",
 )
 args = parser.parse_args()
 model_type = args.model_type

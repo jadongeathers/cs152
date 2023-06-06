@@ -367,7 +367,7 @@ parser.add_argument(
     "--model_type",
     type=str,
     choices=ALLOWED_MODEL_TYPES,
-    help="Specify the model type (google, open_ai, chat_completion, combo)",
+    help="Specify the model type (google, open_ai, chat_completion, combo). Google will use the google perspective model, with additional training on an LGBT-speech related dataset. chat_completion will train on openAI's chat completion model, a general-use tool to generate conversational responses to a prompt (in this case, classifying the user's speech as violent, hateful, or non-threatening). open_ai will train on OpenAI's moderation model, a tool specifically meant to flag inappropriate content. Combo will do a combination of open_ai and google.",
 )
 args = parser.parse_args()
 model_type = args.model_type

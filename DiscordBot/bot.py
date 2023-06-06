@@ -277,7 +277,7 @@ class ModBot(discord.Client):
             elif model_type == "chat_completion":
                 chatcompletion_model = ChatCompletionMod()
 
-                # text_type, either violent speech, hateful speech, or not threatening
+                # text_type, either violent speech, hateful speech, phishing, scam, spam, or not threatening
                 text_type = chatcompletion_model.eval_text(message.content)
                 await mod_channel.send(
                     f'Forwarded message:\n{message.author.name}: "{message.content}"'
@@ -287,7 +287,12 @@ class ModBot(discord.Client):
                     + text_type
                 )
 
-                if text_type == "violent speech" or text_type == "hateful speech":
+                if (
+                    text_type.lower() == "violent speech."
+                    or text_type.lower() == "hateful speech."
+                    or text_type.lower() == "scam."
+                    or text_type.lower() == "this is a phishing message."
+                ):
                     await file_automatic_report()
 
             elif model_type == "combo":

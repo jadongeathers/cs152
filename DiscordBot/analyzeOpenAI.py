@@ -57,11 +57,6 @@ class OpenAIMod:
         )
         breakpoint()
 
-        # Optimal coefficients are: intercept=-1.6949516955386068,
-        # hate=2.514414538130454,
-        # hate/threatening=-0.11870110156245899,
-        # violence=-0.7040727776293726
-
     def sigmoid(x):
         return 1 / (1 + math.exp(-x))
 
@@ -114,11 +109,7 @@ class OpenAIMod:
         samples.to_csv('test_samples.csv', mode='a')
 
 
-    # test two types of combinations to see which results in the hig
-    # 1. Examples flagged by both models
-    # 2. Finding the average performance of model in comparison to another using prediction scores
-    # 3. Using Google Perspective's binary predictions as indicators of whether a message should
-    #    be evaluated again using OpenAI
+    # test two types of combinations
     def evalCombos(self):
         COEFFS = {
             "intercept": -1.6949516955386068,
@@ -135,10 +126,11 @@ class OpenAIMod:
         model_output1 = []
         model_output2 = []
         for idx, row in test_samples.iterrows():
-            if row['perspective_prediction'] == 1 and row["openai_prediction"] == 1:
-                model_output1 += row['openai_scores']
 
-            model_output2 += row['perspective_scores'] + row['openai_scores']
+            model_output1 += row['perspective_scores'] + row['openai_scores']
+
+            if row['perspective_prediction'] == 1 and row["openai_prediction"] == 1:
+                model_output2 += row['openai_scores']
 
         y_true, y_pred_scores, y_pred = self.get_cm(testset, model_output1, title="OpenAI Confusion Matrix")
         samples = pd.read_csv('test_samples.csv')

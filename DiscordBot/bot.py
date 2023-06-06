@@ -292,7 +292,10 @@ class ModBot(discord.Client):
                 # text_type, either violent speech, hateful speech, or not threatening
                 text_type = chatcompletion_model.eval_text(message.content)
                 print("The message sent by the user: " + message.content)
-                print("This message is classified as: " + text_type)
+                print(
+                    "This message is classified by chat completion model as: "
+                    + text_type
+                )
 
                 if text_type == "violent speech" or text_type == "hateful speech":
                     await file_automatic_report()

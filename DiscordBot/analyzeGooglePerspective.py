@@ -82,15 +82,7 @@ def evaluateGooglePerspective():
     test_df = hate_datasets["test"].to_pandas()
     test_df = test_df.iloc[:100,]
 
-    token_path = "tokens.json"
-    if not os.path.isfile(token_path):
-        raise Exception(f"{token_path} not found!")
-    with open(token_path) as f:
-        # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
-        tokens = json.load(f)
-        google_token = tokens["google"]
-
-    API_KEY = google_token
+    API_KEY = handle_tokens("google")
 
     google = discovery.build(
         "commentanalyzer",

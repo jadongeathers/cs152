@@ -248,6 +248,17 @@ class ModBot(discord.Client):
                     self.report_in_progress = False
 
         if message.channel.name == f"group-{self.group_num}":
+
+            async def file_automatic_report():
+                await mod_channel.send("**Made automatic report.**")
+                report = Report(self)
+                report.reporter_id = "BOT"
+                report.offending_message = message
+                self.data_manager.add_user_report("BOT")
+                if "BOT" not in self.unreviewed:
+                    self.unreviewed["BOT"] = []
+                self.unreviewed["BOT"].append(report)
+
             if model_type == "google":
                 # google_score = self.eval_google(message)
                 # openai_scores = OpenAIMod.discord_eval(message)
@@ -259,14 +270,7 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    await mod_channel.send("**Made automatic report.**")
-                    report = Report(self)
-                    report.reporter_id = "BOT"
-                    report.offending_message = message
-                    self.data_manager.add_user_report("BOT")
-                    if "BOT" not in self.unreviewed:
-                        self.unreviewed["BOT"] = []
-                    self.unreviewed["BOT"].append(report)
+                    file_automatic_report()
                 await mod_channel.send(self.code_format(score))
 
             elif model_type == "open_ai":
@@ -279,14 +283,7 @@ class ModBot(discord.Client):
                 score = sigmoid(score)
 
                 if score > 0.5:
-                    await mod_channel.send("**Made automatic report.**")
-                    report = Report(self)
-                    report.reporter_id = "BOT"
-                    report.offending_message = message
-                    self.data_manager.add_user_report("BOT")
-                    if "BOT" not in self.unreviewed:
-                        self.unreviewed["BOT"] = []
-                    self.unreviewed["BOT"].append(report)
+                    file_automatic_report()
                 await mod_channel.send(self.code_format(score))
 
             elif model_type == "chat_completion":
@@ -298,14 +295,7 @@ class ModBot(discord.Client):
                 print("This message is classified as: " + text_type)
 
                 if text_type == "violent speech" or text_type == "hateful speech":
-                    await mod_channel.send("**Made automatic report.**")
-                    report = Report(self)
-                    report.reporter_id = "BOT"
-                    report.offending_message = message
-                    self.data_manager.add_user_report("BOT")
-                    if "BOT" not in self.unreviewed:
-                        self.unreviewed["BOT"] = []
-                    self.unreviewed["BOT"].append(report)
+                    file_automatic_report()
 
             elif model_type == "combo":
                 # Combination of openai and google perspective (the ones that require our own training)
@@ -326,15 +316,7 @@ class ModBot(discord.Client):
                     openai_score = sigmoid(openai_score)
 
                     if openai_score > 0.5:
-                        await mod_channel.send("**Made automatic report.**")
-                        report = Report(self)
-                        report.reporter_id = "BOT"
-                        report.offending_message = message
-                        self.data_manager.add_user_report("BOT")
-                        if "BOT" not in self.unreviewed:
-                            self.unreviewed["BOT"] = []
-                        self.unreviewed["BOT"].append(report)
-                        await mod_channel.send(self.code_format(openai_score))
+                        file_automatic_report()
 
                         if (
                             max(openai_scores, key=openai_scores.get)

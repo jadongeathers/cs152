@@ -9,8 +9,9 @@ from tqdm import tqdm
 import time
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib
 import matplotlib.pyplot as plt
-from token_handler import handle_tokens
+# from token_handler import handle_tokens
 
 # from bot import ModBot
 
@@ -20,7 +21,15 @@ class OpenAIMod:
         self.ds = datasets.load_dataset("classla/FRENK-hate-en", "multiclass")
 
     def eval_text(self, message):
-        openai.api_key = handle_tokens("open_ai")
+        token_path = "tokens.json"
+        if not os.path.isfile(token_path):
+            raise Exception(f"{token_path} not found!")
+        with open(token_path) as f:
+            # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
+            tokens = json.load(f)
+            openai_token = tokens["open_ai"]
+
+        openai.api_key = openai_token
         response = openai.Moderation.create(input=message)
         output = response["results"]
 
@@ -58,6 +67,8 @@ class OpenAIMod:
         if not isinstance(title, str):
             raise TypeError("title must be a string")
 
+        # edited it to see what I could do (this is the commented out section beneath this)
+        # and wasn't able to change anything
         model_output = np.array(model_output)
         y_true = ds[~np.isnan(model_output).astype(bool)].label.values
         y_true = np.where((y_true == 1) | (y_true == 2), 1, 0)
@@ -66,10 +77,41 @@ class OpenAIMod:
 
         cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
         cm = cm / cm.sum()
+        matplotlib.rcParams.update({'font.size': 18})
+        fig, ax = plt.subplots()
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])
-        disp.plot()
-        plt.title(title)
+        disp.plot(cmap='Reds', ax=ax)
+        plt.title(title, fontdict={'family': '.Keyboard', 'size': 16})
+        plt.xlabel('Predicted Label', fontdict={'family': '.Keyboard', 'size': 15})
+        plt.ylabel('True Label', fontdict={'family': '.Keyboard', 'size': 15})
         plt.show()
+        # model_output = np.array(model_output)
+        # y_true = ds[~np.isnan(model_output).astype(bool)].label.values
+        # y_true = np.where((y_true == 1) | (y_true == 2), 1, 0)
+        # y_pred_scores = model_output[~np.isnan(model_output)]
+        # y_pred = np.where(y_pred_scores > 0.5, 1, 0)
+        #
+        # cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+        # cm = cm / cm.sum()
+        # matplotlib.rcParams.update({'font.size': 18})
+        # fig, ax = plt.subplots()
+        # # ax.set_facecolor('white')
+        # ax.spines['bottom'].set_color('black')
+        # ax.spines['top'].set_color('black')
+        # ax.spines['right'].set_color('black')
+        # ax.spines['left'].set_color('black')
+        # ax.tick_params(colors='black', which='both')
+        # # ax.set_ylabel(color='white')
+        # # ax.set_xlabel(color='white')
+        # disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])
+        # # ax.yaxis.label.set_color('w')
+        # # ax.xaxis.label.set_color('w')
+        # # ax.title.set_color('w')
+        # disp.plot(cmap='Reds', ax=ax)
+        # plt.title(title, fontdict={'family': '.Keyboard', 'size': 16, 'color': 'black'})
+        # plt.xlabel('Predicted Label', fontdict={'family': '.Keyboard', 'size': 15, 'color': 'black'})
+        # plt.ylabel('True Label', fontdict={'family': '.Keyboard', 'size': 15, 'color': 'black'})
+        # plt.show()
         return y_true, y_pred_scores, y_pred
 
     def evalOpenAI(self):
@@ -91,19 +133,23 @@ class OpenAIMod:
             score = 0
             for key in output:
                 score += COEFFS[key] * output[key]
-                score += COEFFS["intercept"]
-                score = self.sigmoid(score)
-                model_output.append(score)
 
-        y_true, y_pred_scores, y_pred = self.get_cm(
-            testset, model_output, title="OpenAI Confusion Matrix"
-        )
+            score += COEFFS["intercept"]
+            score = self.sigmoid(score)
+            model_output.append(score)
+
+        # print(len(model_output))
+        # print(testset.shape)
+
+        y_true, y_pred_scores, y_pred = self.get_cm(testset, model_output, title="OpenAI")
 
         samples = pd.read_csv("test_samples.csv")
         samples["openai_prediction"] = y_pred
         samples["openai_scores"] = y_pred_scores
-        breakpoint()
-        samples.to_csv("test_samples.csv", mode="a")
+        samples.to_csv("test_samples.csv")
+
+        # samples.to_csv("test_samples2.csv")
+        # samples.to_csv("test_samples.csv", mode="a")
 
     # testing two types of combinations to see if confusion matrix changes:
     # combo1: adding scores output by both models, reverifying if the combined score > 5
@@ -124,33 +170,28 @@ class OpenAIMod:
         model_output1 = []
         model_output2 = []
         for idx, row in test_samples.iterrows():
-            model_output1 += row["perspective_scores"] + row["openai_scores"]
+            model_output1.append(row["perspective_scores"] + row["openai_scores"])
 
             if row["perspective_prediction"] == 1 and row["openai_prediction"] == 1:
-                model_output2 += row["openai_scores"]
+                model_output2.append(row["openai_scores"])
+            else: model_output2.append(0)
 
-        y_true, y_pred_scores, y_pred = self.get_cm(
-            testset, model_output1, title="OpenAI Confusion Matrix"
-        )
-        samples = pd.read_csv("test_samples.csv")
-        samples["combo1_prediction"] = y_pred
-        samples['combo1_scores'] = y_pred_scores
-        breakpoint()
+        y_true, y_pred_scores, y_pred = self.get_cm(testset, model_output1, title="Combo 1")
+        test_samples["combo1_prediction"] = y_pred
+        test_samples['combo1_scores'] = y_pred_scores
+        # breakpoint()
 
-        y_true, y_pred_scores, y_pred = self.get_cm(
-            testset, model_output2, title="OpenAI Confusion Matrix"
-        )
-        samples = pd.read_csv("test_samples.csv")
-        samples["combo2_prediction"] = y_pred
+        y_true_other, y_pred_scores_other, y_pred_other = self.get_cm(testset, model_output2, title="Combo")
+        test_samples["combo2_prediction"] = y_pred_other
         # don't need scores here because it's the same as samples['openai_scores']
-        breakpoint()
+        # breakpoint()
 
-        samples.to_csv("test_samples.csv", mode="a")
+        test_samples.to_csv("test_samples.csv")
 
 
 if __name__ == "__main__":
     openai_model = OpenAIMod()
-    openai_model.evalOpenAI()
+    openai_model.evalCombos()
 
 
 ##############################

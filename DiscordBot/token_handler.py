@@ -2,7 +2,6 @@ import openai
 import json
 import os
 
-
 def handle_tokens(model):
     token_path = "tokens.json"
     if not os.path.isfile(token_path):

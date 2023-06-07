@@ -176,12 +176,12 @@ class OpenAIMod:
                 model_output2.append(row["openai_scores"])
             else: model_output2.append(0)
 
-        y_true, y_pred_scores, y_pred = self.get_cm(testset, model_output1, title="Combination 1")
+        y_true, y_pred_scores, y_pred = self.get_cm(testset, model_output1, title="Combo 1")
         test_samples["combo1_prediction"] = y_pred
         test_samples['combo1_scores'] = y_pred_scores
         # breakpoint()
 
-        y_true_other, y_pred_scores_other, y_pred_other = self.get_cm(testset, model_output2, title="Combination 2")
+        y_true_other, y_pred_scores_other, y_pred_other = self.get_cm(testset, model_output2, title="Combo")
         test_samples["combo2_prediction"] = y_pred_other
         # don't need scores here because it's the same as samples['openai_scores']
         # breakpoint()

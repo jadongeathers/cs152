@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import math
 from tqdm import tqdm
+import time
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
@@ -36,6 +37,7 @@ class OpenAIMod:
 
         output = []
         for i in tqdm(range(valset.shape[0])):
+            time.sleep(1)
             open_ai = self.eval_text(valset.loc[valset.index[i], "text"])
             output.append(open_ai)
 
@@ -49,7 +51,7 @@ class OpenAIMod:
         )
         breakpoint()
 
-    def sigmoid(x):
+    def sigmoid(self, x):
         return 1 / (1 + math.exp(-x))
 
     def get_cm(self, ds, model_output, title):
@@ -83,6 +85,7 @@ class OpenAIMod:
 
         model_output = []
         for i in tqdm(range(testset.shape[0])):
+            time.sleep(1)
             output = self.eval_text(testset.loc[testset.index[i], "text"])
 
             score = 0
@@ -102,7 +105,9 @@ class OpenAIMod:
         breakpoint()
         samples.to_csv("test_samples.csv", mode="a")
 
-    # test two types of combinations
+    # testing two types of combinations to see if confusion matrix changes:
+    # combo1: adding scores output by both models, reverifying if the combined score > 5
+    # combo2: inputting messages flagged by Google Perspective into OpenAI
     def evalCombos(self):
         COEFFS = {
             "intercept": -1.6949516955386068,
@@ -129,7 +134,7 @@ class OpenAIMod:
         )
         samples = pd.read_csv("test_samples.csv")
         samples["combo1_prediction"] = y_pred
-        # samples["openai_scores"] = y_pred_scores
+        samples['combo1_scores'] = y_pred_scores
         breakpoint()
 
         y_true, y_pred_scores, y_pred = self.get_cm(
@@ -137,7 +142,7 @@ class OpenAIMod:
         )
         samples = pd.read_csv("test_samples.csv")
         samples["combo2_prediction"] = y_pred
-        # samples["openai_scores"] = y_pred_scores
+        # don't need scores here because it's the same as samples['openai_scores']
         breakpoint()
 
         samples.to_csv("test_samples.csv", mode="a")
@@ -145,7 +150,7 @@ class OpenAIMod:
 
 if __name__ == "__main__":
     openai_model = OpenAIMod()
-    openai_model.evalCombos()
+    openai_model.evalOpenAI()
 
 
 ##############################

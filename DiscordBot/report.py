@@ -255,6 +255,7 @@ class Review:
                 reply += '(1) Impersonation\n'
                 reply += '(2) Scam\n'
                 reply += '(3) Solicitation\n'
+                reply += '(4) Not Violating\n'
                 self.state = ReviewState.REVIEW_FRAUD
                 return [reply]
 
@@ -288,7 +289,8 @@ class Review:
                 reply += '(2) Denial of a violent event\n'
                 reply += '(3) Dehumanization\n'
                 reply += '(4) Inciting or encouraging violence\n'
-                reply += '(5) Hate speech'
+                reply += '(5) Hate speech\n'
+                reply += '(6) Not Violating\n'
                 self.state = ReviewState.REVIEW_VERBAL_ABUSE
                 return [reply]
 
@@ -321,7 +323,8 @@ class Review:
                 reply = 'What is the type of harassment or intimidation? Please select the corresponding number.\n'
                 reply += '(1) Threatening to post or posting private information\n'
                 reply += '(2) Sexual harassment\n'
-                reply += '(3) Stalking or threats to injure'
+                reply += '(3) Stalking or threats to injure\n'
+                reply += '(4) Not Violating\n'
                 self.state = ReviewState.REVIEW_HARASSMENT
                 return [reply]
 
@@ -351,7 +354,8 @@ class Review:
                 reply += '(1) Assault\n'
                 reply += '(2) Self harm\n'
                 reply += '(3) Beastiality\n'
-                reply += '(4) Child exploitation'
+                reply += '(4) Child exploitation\n'
+                reply += '(5) Not Violating\n'
                 self.state = ReviewState.REVIEW_SENSITIVE
                 return reply
 
@@ -402,11 +406,11 @@ class Review:
                 self.state = ReviewState.REVIEW_BOT
                 return ["What is the offense? Please respond with the corresponding number. "
                         "\n(1) Fraud\n(2) Verbal Abuse\n(3) Harassment/Threats of Violence"
-                        "\n(4) Sensitive/Disturbing Content\n(5) Other\n"]
+                        "\n(4) Sensitive/Disturbing Content\n(5) Other\n(6) Non Violating\n"]
 
             return ['Please select a valid option.']
 
-        if self.state == ReviewState.REVIEW_BOT and message.content in ('1', '2', '3', '4', '5'):
+        if self.state == ReviewState.REVIEW_BOT and message.content in ('1', '2', '3', '4', '5', '6'):
             if message.content == '1':
                 reply = 'What is the type of fraud?\n'
                 reply += '(1) Impersonation\n'
@@ -446,10 +450,16 @@ class Review:
                 self.state = ReviewState.REVIEW_OTHER
                 return ['Does the content fit into any other violative category (yes/no)?']
 
+            if message.content == '6':
+                self.state = ReviewState.REVIEW_TIER_0
+
             return ['Please select a valid option.']
 
         if self.state == ReviewState.REVIEW_FRAUD:
-            self.state = ReviewState.REVIEW_TIER_1
+            if message.content == '4':
+                self.state == ReviewState.REVIEW_TIER_0
+            else:
+                self.state = ReviewState.REVIEW_TIER_1
 
         if self.state == ReviewState.REVIEW_VERBAL_ABUSE:
             if message.content in ('1', '2', '3'):
@@ -461,6 +471,8 @@ class Review:
             elif message.content == '5':
                 self.state = ReviewState.REVIEW_INCITE_VIOLENCE
                 return ['Does it encourage, incite, or threaten violence (yes/no)?']
+            elif message.content == '6':
+                self.state == ReviewState.REVIEW_TIER_0
             else:
                 return ['Please select a valid option.']
 
@@ -470,6 +482,8 @@ class Review:
                 return ['Does it discriminate based on inherited attributes and/or feature hate speech (yes/no)?']
             elif message.content in ('2', '3'):
                 self.state = ReviewState.REVIEW_TIER_3
+            elif message.content == '4':
+                self.state == ReviewState.REVIEW_TIER_0
             else:
                 return ['Please select a valid option.']
 
@@ -478,6 +492,8 @@ class Review:
                 self.state = ReviewState.REVIEW_DISCRIMINATE_SENSITIVE
             elif message.content in ('3', '4'):
                 self.state = ReviewState.REVIEW_TIER_4
+            elif message.content == '5':
+                self.state == ReviewState.REVIEW_TIER_0
             else:
                 return ['Please select a valid option.']
 

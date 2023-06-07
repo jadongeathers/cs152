@@ -457,7 +457,7 @@ class Review:
 
         if self.state == ReviewState.REVIEW_FRAUD:
             if message.content == '4':
-                self.state == ReviewState.REVIEW_TIER_0
+                self.state = ReviewState.REVIEW_TIER_0
             else:
                 self.state = ReviewState.REVIEW_TIER_1
 
@@ -472,7 +472,8 @@ class Review:
                 self.state = ReviewState.REVIEW_INCITE_VIOLENCE
                 return ['Does it encourage, incite, or threaten violence (yes/no)?']
             elif message.content == '6':
-                self.state == ReviewState.REVIEW_TIER_0
+                self.state = ReviewState.REVIEW_TIER_0
+
             else:
                 return ['Please select a valid option.']
 
@@ -483,7 +484,7 @@ class Review:
             elif message.content in ('2', '3'):
                 self.state = ReviewState.REVIEW_TIER_3
             elif message.content == '4':
-                self.state == ReviewState.REVIEW_TIER_0
+                self.state = ReviewState.REVIEW_TIER_0
             else:
                 return ['Please select a valid option.']
 
@@ -493,7 +494,7 @@ class Review:
             elif message.content in ('3', '4'):
                 self.state = ReviewState.REVIEW_TIER_4
             elif message.content == '5':
-                self.state == ReviewState.REVIEW_TIER_0
+                self.state = ReviewState.REVIEW_TIER_0
             else:
                 return ['Please select a valid option.']
 
